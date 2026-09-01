@@ -1170,15 +1170,17 @@ function renderCalc(cats){
 /* Fills every money figure from one pass: the rate rows at the top, the Amount column
    and each day's hours / rate / pay in the ledger, and the closing totals. */
 function updateMoney(){
-  var mins = 0, gross = 0, unset = 0;
+  var mins = 0, billMins = 0, gross = 0, unset = 0;
   [].forEach.call(document.querySelectorAll("#calc .calc-row[data-cat]"), function(row){
     var m = +row.getAttribute("data-mins"), r = rateOf(row.getAttribute("data-cat"));
-    mins += m; gross += m / 60 * r;
-    if (!r) unset++;
+    mins += m;
+    /* time on a category with no rate is worth nothing, so it never joins the billed
+       hours - otherwise it would drag the per-hour average below the rate charged */
+    if (r){ billMins += m; gross += m / 60 * r; } else unset++;
   });
 
   /* ---- ledger: hours and amount per entry (either may be typed in), then per day ---- */
-  var dayGross = {}, dayMins = {}, tblMins = 0, tblGross = 0, rowCount = 0;
+  var dayGross = {}, dayMins = {}, tblMins = 0, tblBill = 0, tblGross = 0, rowCount = 0;
   [].forEach.call(document.querySelectorAll("#log tr[data-day]"), function(tr){
     var key = tr.getAttribute("data-day"), id = tr.getAttribute("data-id");
     var auto = +tr.getAttribute("data-auto"), cat = tr.getAttribute("data-cat");
@@ -1188,6 +1190,7 @@ function updateMoney(){
     var m = ho == null ? auto : Math.round(ho * 60);
     var amt = ao == null ? m / 60 * r : ao;
     tblMins += m; tblGross += amt;
+    if (r || amt) tblBill += m;             // a rate, or an amount typed by hand, makes it billed
     dayGross[key] = (dayGross[key] || 0) + amt;
     dayMins[key] = (dayMins[key] || 0) + m;
 
@@ -1215,7 +1218,7 @@ function updateMoney(){
         : "Inherited from the " + cat + " rate \u2014 type here to override just this row";
     }
   });
-  if (rowCount){ mins = tblMins; gross = tblGross; }  // the ledger is the source of truth once shown
+  if (rowCount){ mins = tblMins; gross = tblGross; billMins = tblBill; }  // the ledger is the source of truth once shown
 
   var cells = document.querySelectorAll("#log td.paycell[data-day]");
   var net = cells.length ? 0 : gross;
@@ -1239,20 +1242,26 @@ function updateMoney(){
     box.querySelector(".payreset").hidden = manual == null;
   });
 
-  /* ---- closing totals ---- */
-  var hours = mins / 60, off = gross - net;
+  /* ---- closing totals ----
+     The duration columns keep showing everything logged - that is a fact about the time.
+     Money is priced off the billed hours only, so the per-hour figure reads back as the
+     rate actually charged rather than that rate watered down by unrated time. */
+  var billHours = billMins / 60, unrated = mins - billMins, off = gross - net;
   if ($("#calc-hours")) $("#calc-hours").innerHTML = decimalH(mins) + ' h <em>' + dur(mins) + '</em>';
   if ($("#calc-amt")) $("#calc-amt").textContent = money(gross);
   $("#calc-total").innerHTML = "<b>" + esc(money(gross)) + "</b>" +
-    (unset ? " &middot; " + unset + (unset === 1 ? " category" : " categories") + " without a rate"
-           : " &middot; " + decimalH(mins) + " h billed");
+    " &middot; " + decimalH(billMins) + " h billed" +
+    (unrated > 0 ? " &middot; " + decimalH(unrated) + " h at no rate" +
+                   (unset ? " &middot; " + unset + (unset === 1 ? " category" : " categories") + " unpriced" : "")
+                 : "");
   if ($("#tf-amt")){
     $("#tf-dur").textContent = dur(mins);
     $("#tf-h").textContent = decimalH(mins);
     $("#tf-gross").textContent = money(gross);
     $("#tf-amt").textContent = money(net);
     $("#tf-note").innerHTML = !gross ? "set an hourly rate above to price this ledger"
-      : esc(money(hours ? gross / hours : 0)) + " / h average" +
+      : esc(money(billHours ? gross / billHours : 0)) + " / h on " + decimalH(billMins) + " h billed" +
+        (unrated > 0 ? " &middot; " + decimalH(unrated) + " h at no rate" : "") +
         (Math.abs(off) > 0.005 ? " &middot; &minus; " + esc(money(off)) + " adjusted" : "");
   }
 }
