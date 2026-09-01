@@ -1,0 +1,2331 @@
+<title>Campaign Funnel Ledger</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #eceff4;
+    --surface: #ffffff;
+    --surface-2: #f5f7fa;
+    --raise: #ffffff;
+    --rule: #d5dbe5;
+    --rule-soft: #e6eaf1;
+    --row-hover: #f0f3f9;
+    --ink: #12161f;
+    --ink-2: #39424f;
+    --muted: #69738a;
+    --accent: #3a4fd4;
+    --accent-ink: #2c3ba8;
+    --accent-soft: rgba(58, 79, 212, .10);
+    --good: #0e6f48;
+    --warn: #8f5c07;
+    --crit: #a92f2f;
+    --good-soft: rgba(14, 111, 72, .12);
+    --warn-soft: rgba(143, 92, 7, .13);
+    --crit-soft: rgba(169, 47, 47, .12);
+    /* charts — validated with the dataviz palette validator against these surfaces */
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    /* categorical, fixed order */
+    --o1: #86b6ef;
+    --o2: #5598e7;
+    --o3: #2a78d6;
+    --o4: #184f95;
+    /* blue ordinal: pipeline stage */
+    --n1: #9aa1ae;
+    --n2: #c9cfd8;
+    /* closed-out neutrals */
+    --b1: #963200;
+    --b2: #b33e00;
+    --b3: #cf4e12;
+    --b4: #e5632e;
+    --b5: #fd7845;
+    /* orange ordinal: speed */
+    --grid: #e9edf3;
+    --scrim: rgba(18, 22, 31, .42);
+    --shadow: 0 1px 2px rgba(16, 22, 38, .05), 0 8px 24px -16px rgba(16, 22, 38, .35);
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+    --disp: "Familjen Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme:dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1016;
+      --surface: #141821;
+      --surface-2: #191e29;
+      --raise: #1b2130;
+      --rule: #272e3c;
+      --rule-soft: #1f2532;
+      --row-hover: #1b212c;
+      --ink: #e7eaf1;
+      --ink-2: #bcc4d3;
+      --muted: #8b94a8;
+      --accent: #8fa1ff;
+      --accent-ink: #aab7ff;
+      --accent-soft: rgba(143, 161, 255, .14);
+      --good: #4bbf8b;
+      --warn: #d8a03f;
+      --crit: #e8736b;
+      --good-soft: rgba(75, 191, 139, .14);
+      --warn-soft: rgba(216, 160, 63, .14);
+      --crit-soft: rgba(232, 115, 107, .14);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --o1: #b7d3f6;
+      --o2: #6da7ec;
+      --o3: #3987e5;
+      --o4: #1c5cab;
+      --n1: #5d6575;
+      --n2: #39404e;
+      --b1: #ffc0aa;
+      --b2: #fe9c79;
+      --b3: #f97542;
+      --b4: #de5c27;
+      --b5: #c44400;
+      --grid: #222836;
+      --scrim: rgba(4, 6, 10, .62);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -18px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1016;
+    --surface: #141821;
+    --surface-2: #191e29;
+    --raise: #1b2130;
+    --rule: #272e3c;
+    --rule-soft: #1f2532;
+    --row-hover: #1b212c;
+    --ink: #e7eaf1;
+    --ink-2: #bcc4d3;
+    --muted: #8b94a8;
+    --accent: #8fa1ff;
+    --accent-ink: #aab7ff;
+    --accent-soft: rgba(143, 161, 255, .14);
+    --good: #4bbf8b;
+    --warn: #d8a03f;
+    --crit: #e8736b;
+    --good-soft: rgba(75, 191, 139, .14);
+    --warn-soft: rgba(216, 160, 63, .14);
+    --crit-soft: rgba(232, 115, 107, .14);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --o1: #b7d3f6;
+    --o2: #6da7ec;
+    --o3: #3987e5;
+    --o4: #1c5cab;
+    --n1: #5d6575;
+    --n2: #39404e;
+    --b1: #ffc0aa;
+    --b2: #fe9c79;
+    --b3: #f97542;
+    --b4: #de5c27;
+    --b5: #c44400;
+    --grid: #222836;
+    --scrim: rgba(4, 6, 10, .62);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -18px rgba(0, 0, 0, .8);
+  }
+
+  * {
+    box-sizing: border-box
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased
+  }
+
+  .wrap {
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 26px 20px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px
+  }
+
+  /* ---- masthead ---- */
+  .mast {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--ink)
+  }
+
+  .mast h1 {
+    font-family: var(--disp);
+    font-weight: 700;
+    font-size: clamp(26px, 3.4vw, 38px);
+    letter-spacing: -.02em;
+    margin: 2px 0 0;
+    text-wrap: balance
+  }
+
+  .eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--mono)
+  }
+
+  .mast-meta {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted)
+  }
+
+  .mast-meta b {
+    display: block;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums
+  }
+
+  .mast-act {
+    display: flex;
+    gap: 8px;
+    align-items: center
+  }
+
+  .ghost {
+    font: inherit;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px
+  }
+
+  .ghost:hover {
+    color: var(--ink);
+    border-color: var(--muted)
+  }
+
+  .ghost svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6
+  }
+
+  /* ---- tabs ---- */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: -4px
+  }
+
+  .tab {
+    font: inherit;
+    font-family: var(--disp);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -.005em;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 9px 15px;
+    cursor: pointer;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: baseline;
+    gap: 7px
+  }
+
+  .tab:hover {
+    color: var(--ink)
+  }
+
+  .tab[aria-selected="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--accent)
+  }
+
+  .tab small {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted)
+  }
+
+  /* ---- kpi ledger ---- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden
+  }
+
+  .kpi {
+    background: var(--surface);
+    padding: 13px 15px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px
+  }
+
+  .kpi .k-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted)
+  }
+
+  .kpi .k-val {
+    font-family: var(--disp);
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -.015em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1
+  }
+
+  .kpi .k-sub {
+    font-size: 11.5px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums
+  }
+
+  .kpi .k-sub em {
+    font-style: normal;
+    color: var(--muted)
+  }
+
+  /* ---- controls ---- */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 11px 13px;
+    box-shadow: var(--shadow)
+  }
+
+  .ctl {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap
+  }
+
+  .ctl-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted)
+  }
+
+  .search {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 7px 10px;
+    min-width: 220px
+  }
+
+  .search::placeholder {
+    color: var(--muted)
+  }
+
+  .seg {
+    display: flex;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden
+  }
+
+  .seg button {
+    font: inherit;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: var(--surface);
+    border: 0;
+    border-right: 1px solid var(--rule);
+    padding: 6px 11px;
+    cursor: pointer
+  }
+
+  .seg button:last-child {
+    border-right: 0
+  }
+
+  .seg button:hover {
+    color: var(--ink);
+    background: var(--surface-2)
+  }
+
+  .seg button[aria-pressed="true"] {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 600
+  }
+
+  .chip {
+    font: inherit;
+    font-size: 11.5px;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 5px 11px;
+    cursor: pointer
+  }
+
+  .chip:hover {
+    color: var(--ink);
+    border-color: var(--muted)
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink)
+  }
+
+  .chip.off {
+    opacity: .55;
+    text-decoration: line-through
+  }
+
+  .spacer {
+    flex: 1 1 auto
+  }
+
+  .count {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px
+  }
+
+  [hidden] {
+    display: none !important
+  }
+
+  /* ---- table ---- */
+  .tablecard {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    overflow: hidden
+  }
+
+  .scroller {
+    overflow: auto;
+    max-height: min(74vh, 900px)
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-variant-numeric: tabular-nums
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+    text-align: right;
+    padding: 6px 11px;
+    border-bottom: 1px solid var(--rule-soft)
+  }
+
+  thead th {
+    position: sticky;
+    background: var(--surface-2);
+    z-index: 3;
+    font-weight: 600
+  }
+
+  tr.grp th {
+    top: 0;
+    height: 27px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-2)
+  }
+
+  tr.cols th {
+    top: 27px;
+    height: 34px;
+    font-size: 11px;
+    color: var(--ink-2);
+    border-bottom: 1.5px solid var(--rule);
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface-2)
+  }
+
+  tr.cols.solo th {
+    top: 0
+  }
+
+  tr.cols th:hover {
+    color: var(--ink);
+    background: var(--row-hover)
+  }
+
+  tr.cols th .arw {
+    color: var(--accent);
+    font-size: 9px;
+    margin-left: 3px;
+    visibility: hidden
+  }
+
+  tr.cols th[data-dir] .arw {
+    visibility: visible
+  }
+
+  tr.cols th[data-dir] {
+    color: var(--accent-ink)
+  }
+
+  th.gsep,
+  td.gsep {
+    border-left: 1px solid var(--rule-soft)
+  }
+
+  tbody td {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2)
+  }
+
+  tbody tr.row:hover td {
+    background: var(--row-hover)
+  }
+
+  .c-name {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface);
+    text-align: left;
+    min-width: 250px;
+    max-width: 330px;
+    box-shadow: 1px 0 0 var(--rule)
+  }
+
+  thead .c-name {
+    z-index: 4
+  }
+
+  tbody tr.row:hover .c-name {
+    background: var(--row-hover)
+  }
+
+  .namecell {
+    display: flex;
+    align-items: center;
+    gap: 8px
+  }
+
+  .exp {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    width: 19px;
+    height: 19px;
+    line-height: 1;
+    cursor: pointer;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center
+  }
+
+  .exp:hover {
+    color: var(--ink);
+    border-color: var(--muted)
+  }
+
+  .nm {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+
+  tr.row.zero .nm {
+    color: var(--muted);
+    font-weight: 400
+  }
+
+  .rank {
+    font-size: 10px;
+    color: var(--muted);
+    width: 22px;
+    flex: 0 0 auto;
+    text-align: right
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .07em;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    background: var(--surface-2)
+  }
+
+  .tag.out {
+    color: var(--accent-ink);
+    border-color: var(--accent-soft);
+    background: var(--accent-soft)
+  }
+
+  .tag.inb {
+    color: var(--good);
+    border-color: var(--good-soft);
+    background: var(--good-soft)
+  }
+
+  .tag.na {
+    opacity: .7
+  }
+
+  .tag.grp {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    letter-spacing: 0;
+    color: var(--ink-2);
+    border-style: solid
+  }
+
+  .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--good);
+    margin-right: 6px
+  }
+
+  .dot.off {
+    background: var(--muted)
+  }
+
+  .stat {
+    font-size: 11px;
+    color: var(--ink-2)
+  }
+
+  .stat.off {
+    color: var(--muted)
+  }
+
+  td.lead-cell {
+    min-width: 104px
+  }
+
+  .bar {
+    position: relative;
+    display: block;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--rule-soft);
+    margin-top: 3px
+  }
+
+  .bar i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: .75
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500
+  }
+
+  .pill.g {
+    color: var(--good);
+    background: var(--good-soft)
+  }
+
+  .pill.w {
+    color: var(--warn);
+    background: var(--warn-soft)
+  }
+
+  .pill.c {
+    color: var(--crit);
+    background: var(--crit-soft)
+  }
+
+  .dim {
+    color: var(--muted);
+    opacity: .55
+  }
+
+  .mix {
+    display: flex;
+    height: 9px;
+    width: 104px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--rule-soft);
+    margin-left: auto
+  }
+
+  .mix i {
+    display: block;
+    height: 100%;
+    box-shadow: 0 0 0 .5px var(--surface) inset
+  }
+
+  .m1 {
+    background: var(--b1)
+  }
+
+  .m2 {
+    background: var(--b2)
+  }
+
+  .m3 {
+    background: var(--b3)
+  }
+
+  .m4 {
+    background: var(--b4)
+  }
+
+  .m5 {
+    background: var(--b5)
+  }
+
+  tfoot td,
+  tfoot th {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface-2);
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    z-index: 3
+  }
+
+  tfoot th.c-name {
+    z-index: 4;
+    background: var(--surface-2);
+    box-shadow: 1px 0 0 var(--rule);
+    font-family: var(--sans);
+    font-size: 12px;
+    letter-spacing: .02em
+  }
+
+  /* ---- detail drawer ---- */
+  tr.detail>td {
+    padding: 0;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule)
+  }
+
+  .drawer {
+    padding: 16px 18px 18px;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(240px, 320px) 1fr;
+    white-space: normal;
+    position: sticky;
+    left: 0;
+    max-width: min(1520px, 96vw)
+  }
+
+  .drawer h4 {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600
+  }
+
+  .dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+    gap: 2px 18px;
+    margin: 0
+  }
+
+  .dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 3px 0;
+    border-bottom: 1px dotted var(--rule)
+  }
+
+  .dl dt {
+    font-size: 11.5px;
+    color: var(--muted)
+  }
+
+  .dl dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums
+  }
+
+  .uid {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    word-break: break-all
+  }
+
+  .speedbar {
+    display: flex;
+    height: 22px;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px
+  }
+
+  .speedbar i {
+    border-left: 2px solid var(--surface-2);
+    box-sizing: border-box
+  }
+
+  .speedbar i:first-child {
+    border-left: 0
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted)
+  }
+
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px
+  }
+
+  .legend i {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    display: block;
+    flex: 0 0 auto
+  }
+
+  /* ---- charts ---- */
+  .charts {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(520px, 1fr))
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0
+  }
+
+  .card h3 {
+    margin: 0;
+    font-family: var(--disp);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -.01em
+  }
+
+  .card .sub {
+    margin: -8px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 62ch
+  }
+
+  .plot {
+    display: grid;
+    grid-template-columns: minmax(88px, 150px) 1fr auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 7px;
+    min-width: 0
+  }
+
+  .plot.noval {
+    grid-template-columns: minmax(88px, 150px) 1fr
+  }
+
+  .blab {
+    font-size: 12px;
+    color: var(--ink-2);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+
+  .btrack {
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    min-height: 19px
+  }
+
+  .plot.noval .btrack {
+    grid-column: 2/-1
+  }
+
+  .bfill {
+    display: block;
+    height: 15px;
+    border-radius: 0 3px 3px 0;
+    background: var(--s1);
+    width: var(--w);
+    max-width: 100%;
+    transition: width .75s cubic-bezier(.22, .9, .3, 1);
+    transition-delay: calc(var(--i, 0)*45ms)
+  }
+
+  .plot.pre .bfill {
+    width: 0
+  }
+
+  .bval {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    transition: opacity .4s ease .35s
+  }
+
+  .plot.pre .bval {
+    opacity: 0
+  }
+
+  .stack {
+    display: flex;
+    height: 21px;
+    width: 100%;
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--rule-soft)
+  }
+
+  .stack i {
+    height: 100%;
+    width: var(--w);
+    border-left: 2px solid var(--surface);
+    box-sizing: border-box;
+    transition: width .75s cubic-bezier(.22, .9, .3, 1);
+    transition-delay: calc(var(--i, 0)*45ms)
+  }
+
+  .stack i:first-child {
+    border-left: 0
+  }
+
+  .plot.pre .stack i {
+    width: 0
+  }
+
+  .grp3 {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%
+  }
+
+  .grp3 .bfill {
+    height: 9px;
+    border-radius: 0 2px 2px 0
+  }
+
+  .axis {
+    position: relative;
+    height: 15px;
+    grid-column: 2/-1;
+    border-top: 1px solid var(--rule);
+    margin-top: 2px
+  }
+
+  .axis span {
+    position: absolute;
+    top: 2px;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    white-space: nowrap
+  }
+
+  .axis span:first-child {
+    transform: none
+  }
+
+  .axis span:last-child {
+    transform: translateX(-100%)
+  }
+
+  .gridlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none
+  }
+
+  .gridlines i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--grid)
+  }
+
+  .s1 {
+    background: var(--s1)
+  }
+
+  .s2 {
+    background: var(--s2)
+  }
+
+  .s3 {
+    background: var(--s3)
+  }
+
+  .o1 {
+    background: var(--o1)
+  }
+
+  .o2 {
+    background: var(--o2)
+  }
+
+  .o3 {
+    background: var(--o3)
+  }
+
+  .o4 {
+    background: var(--o4)
+  }
+
+  .n1 {
+    background: var(--n1)
+  }
+
+  .n2 {
+    background: var(--n2)
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    padding: 10px 12px;
+    line-height: 1.5
+  }
+
+  .hint b {
+    color: var(--ink);
+    font-weight: 600
+  }
+
+  #tip {
+    position: fixed;
+    z-index: 60;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--ground);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 6px 9px;
+    border-radius: 3px;
+    max-width: 280px;
+    box-shadow: 0 6px 22px -8px rgba(0, 0, 0, .6);
+    white-space: pre-line
+  }
+
+  #tip b {
+    color: var(--surface);
+    font-weight: 600
+  }
+
+  /* ---- group manager ---- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    background: var(--scrim);
+    padding: 20px
+  }
+
+  .sheet {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: 0 30px 70px -30px rgba(0, 0, 0, .6);
+    width: min(940px, 100%);
+    max-height: min(84vh, 780px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden
+  }
+
+  .sheet header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px 13px;
+    border-bottom: 1px solid var(--rule)
+  }
+
+  .sheet h2 {
+    margin: 0;
+    font-family: var(--disp);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.01em
+  }
+
+  .sheet header p {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 56ch;
+    line-height: 1.5
+  }
+
+  .sheet-body {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0
+  }
+
+  .pane {
+    padding: 14px 16px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0
+  }
+
+  .pane+.pane {
+    border-left: 1px solid var(--rule)
+  }
+
+  .pane h4 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600
+  }
+
+  .newgrp {
+    display: flex;
+    gap: 6px
+  }
+
+  .newgrp input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 6px 9px
+  }
+
+  .btn {
+    font: inherit;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--surface);
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap
+  }
+
+  .btn:hover {
+    opacity: .86
+  }
+
+  .btn.quiet {
+    color: var(--muted);
+    background: transparent;
+    border-color: var(--rule)
+  }
+
+  .btn.quiet:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+    opacity: 1
+  }
+
+  .glist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px
+  }
+
+  .glist li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 5px 6px 5px 9px;
+    background: var(--surface-2)
+  }
+
+  .glist input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    padding: 2px 0
+  }
+
+  .glist .n {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums
+  }
+
+  .del {
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px
+  }
+
+  .del:hover {
+    color: var(--crit);
+    background: var(--crit-soft)
+  }
+
+  .assign {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px
+  }
+
+  .assign li {
+    display: grid;
+    grid-template-columns: 1fr 190px;
+    gap: 10px;
+    align-items: center;
+    padding: 4px 2px;
+    border-bottom: 1px solid var(--rule-soft)
+  }
+
+  .assign .an {
+    font-size: 12.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+
+  .assign .an em {
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-left: 7px
+  }
+
+  .assign select {
+    font: inherit;
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 4px 6px;
+    width: 100%
+  }
+
+  .sheet footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--rule);
+    background: var(--surface-2)
+  }
+
+  .savenote {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted)
+  }
+
+  /* ---- footnotes ---- */
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--muted)
+  }
+
+  .notes h4 {
+    margin: 0 0 6px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    font-weight: 600
+  }
+
+  .notes p {
+    margin: 0 0 6px;
+    line-height: 1.6
+  }
+
+  .deptlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px
+  }
+
+  .deptlist li {
+    display: flex;
+    gap: 9px;
+    align-items: baseline
+  }
+
+  .deptlist code {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    word-break: break-all
+  }
+
+  .empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12.5px
+  }
+
+  @media (max-width:860px) {
+    .sheet-body {
+      grid-template-columns: 1fr
+    }
+
+    .pane+.pane {
+      border-left: 0;
+      border-top: 1px solid var(--rule)
+    }
+
+    .assign li {
+      grid-template-columns: 1fr 150px
+    }
+  }
+
+  @media (max-width:760px) {
+    .drawer {
+      grid-template-columns: 1fr
+    }
+
+    .wrap {
+      padding: 18px 12px 48px
+    }
+
+    .c-name {
+      min-width: 200px
+    }
+
+    .charts {
+      grid-template-columns: 1fr
+    }
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    * {
+      transition: none !important;
+      animation: none !important
+    }
+
+    .plot.pre .bfill,
+    .plot.pre .stack i {
+      width: var(--w)
+    }
+
+    .plot.pre .bval {
+      opacity: 1
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1>Campaign Funnel Ledger</h1>
+    </div>
+    <div class="mast-meta" id="mastmeta"></div>
+    <div class="mast-act">
+      <button class="ghost" id="grpBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.2"></circle>
+          <path d="M12 2.8v2.6M12 18.6v2.6M4.5 7.5l2.2 1.3M17.3 15.2l2.2 1.3M4.5 16.5l2.2-1.3M17.3 8.8l2.2-1.3"></path>
+        </svg>
+        <span id="grpBtnLabel">Groups</span>
+      </button>
+      <button class="ghost" id="themeBtn" type="button">theme: auto</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-ledger" data-tab="ledger" aria-selected="true">Ledger <small>36
+        cols</small></button>
+    <button class="tab" role="tab" id="tab-snapshot" data-tab="snapshot" aria-selected="false">Snapshot <small>4
+        cols</small></button>
+    <button class="tab" role="tab" id="tab-charts" data-tab="charts" aria-selected="false">Charts <small>4
+        views</small></button>
+  </nav>
+
+  <section class="kpis" id="kpis" aria-label="Reported totals"></section>
+
+  <div class="controls">
+    <div class="ctl">
+      <label class="ctl-label" for="q">Find</label>
+      <input class="search" id="q" type="search" placeholder="Campaign, UID, group or department…" autocomplete="off">
+    </div>
+    <div class="ctl">
+      <span class="ctl-label">Channel</span>
+      <div class="seg" id="segType" role="group" aria-label="Filter by channel"></div>
+    </div>
+    <div class="ctl">
+      <span class="ctl-label">State</span>
+      <div class="seg" id="segState" role="group" aria-label="Filter by state"></div>
+    </div>
+    <div class="ctl" id="grpFilterWrap">
+      <span class="ctl-label">Groups</span>
+      <div class="ctl" id="grpFilter" style="gap:6px"></div>
+    </div>
+    <div class="ctl" id="colWrap">
+      <span class="ctl-label">Columns</span>
+      <div class="ctl" id="grpChips" style="gap:6px"></div>
+    </div>
+    <span class="spacer"></span>
+    <span class="count" id="count"></span>
+  </div>
+
+  <!-- LEDGER -->
+  <div id="view-ledger" role="tabpanel" aria-labelledby="tab-ledger">
+    <div class="tablecard">
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr class="grp" id="grpRow"></tr>
+            <tr class="cols" id="colRow"></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr id="footRow"></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="empty" id="empty" hidden>No campaign matches these filters.</div>
+    </div>
+  </div>
+
+  <!-- SNAPSHOT -->
+  <div id="view-snapshot" role="tabpanel" aria-labelledby="tab-snapshot" hidden>
+    <div class="controls" style="box-shadow:none">
+      <div class="ctl">
+        <span class="ctl-label">Rows</span>
+        <div class="seg" id="segRoll" role="group" aria-label="Row mode"></div>
+      </div>
+      <span class="spacer"></span>
+      <span class="count" id="count2"></span>
+    </div>
+    <div class="tablecard" style="margin-top:14px">
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr class="cols solo" id="colRow2"></tr>
+          </thead>
+          <tbody id="tbody2"></tbody>
+          <tfoot>
+            <tr id="footRow2"></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="empty" id="empty2" hidden>No campaign matches these filters.</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div id="view-charts" role="tabpanel" aria-labelledby="tab-charts" hidden>
+    <div id="chartHint"></div>
+    <div class="charts" id="charts"></div>
+  </div>
+
+  <section class="notes">
+    <div>
+      <h4>Response mix</h4>
+      <p>Every connected lead, bucketed by time to first contact. One hue, darkest = fastest; read left to right.</p>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div>
+      <h4>Departments</h4>
+      <ul class="deptlist" id="deptlist"></ul>
+    </div>
+    <div>
+      <h4>How to read this</h4>
+      <p><b>Ledger</b> holds every field. <b>Snapshot</b> is the four numbers most people ask for.
+        <b>Charts</b> plot whatever the filters leave standing. Groups are yours — open <b>Groups</b> in the
+        header to name and assign them; they save in this browser only.
+      </p>
+      <p>Totals rows sum only what is in view: counts are added, rates recomputed from those sums, and average
+        time-to-connect weighted by connected leads.</p>
+      <p id="srcnote"></p>
+    </div>
+  </section>
+</div>
+
+<div id="tip" hidden></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header>
+      <div>
+        <h2 id="modalTitle">Campaign groups</h2>
+        <p>Bundle campaigns however you run them — Meta, Organic, Workshops, or anything you name. Groups drive the
+          Snapshot roll-up, the group filter, and every chart.</p>
+      </div>
+      <button class="btn quiet" id="closeModal" type="button">Close</button>
+    </header>
+    <div class="sheet-body">
+      <div class="pane">
+        <h4>Your groups</h4>
+        <div class="newgrp">
+          <input id="newGrp" type="text" placeholder="New group name…" maxlength="28">
+          <button class="btn" id="addGrp" type="button">Add</button>
+        </div>
+        <ul class="glist" id="glist"></ul>
+        <button class="btn quiet" id="suggestGrp" type="button">Suggest from campaign names</button>
+        <button class="btn quiet" id="clearGrp" type="button">Clear all groups</button>
+      </div>
+      <div class="pane">
+        <h4>Assign campaigns</h4>
+        <input class="search" id="mq" type="search" placeholder="Filter campaigns…" autocomplete="off"
+          style="min-width:0">
+        <ul class="assign" id="assign"></ul>
+      </div>
+    </div>
+    <footer>
+      <span class="savenote" id="savenote"></span>
+      <span class="spacer"></span>
+      <button class="btn" id="doneModal" type="button">Done</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+  const RAW = { "status": 2000, "message": "Success", "data": { "rows": [{ "campaign_uid": "3523a047-6c6d-4142-bda7-0ee64891b35b", "campaign_name": "Meta - Video Editing #1", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 2741, "today_leads": 34, "daily_avg_leads": 88.42, "inbound_leads": 0, "outbound_leads": 2741, "new_leads": 707, "qualified": 481, "processing": 1079, "won": 10, "lost": 248, "unfit": 216, "lost_rate": 9.05, "win_rate": 0.36, "reassigned": 131, "connected": 2706, "connected_pct": 98.72, "connect_avg_hours": 14.11, "connect_buckets": { "under_15m": 352, "under_1h": 311, "under_4h": 536, "under_24h": 1103, "over_24h": 404 }, "orders": 25, "paid_orders": 9, "order_value": 1724205, "paid_order_value": 268806, "collected": 433492, "avg_revenue_per_order": 17339.68, "avg_revenue_per_lead": 158.15, "avg_order_value": 68968.2, "cvr": 0.91 }, { "campaign_uid": "2dc04544-1ad4-408f-8f71-b4745367a33c", "campaign_name": "Meta - Communicative English", "campaign_type": "OUTBOUND", "department": "c74f2c51-29f1-4287-aa78-eccd0be73e42", "is_active": true, "is_orphan": false, "leads": 1951, "today_leads": 54, "daily_avg_leads": 62.94, "inbound_leads": 0, "outbound_leads": 1951, "new_leads": 585, "qualified": 317, "processing": 807, "won": 37, "lost": 138, "unfit": 67, "lost_rate": 7.07, "win_rate": 1.9, "reassigned": 75, "connected": 1914, "connected_pct": 98.1, "connect_avg_hours": 13.63, "connect_buckets": { "under_15m": 244, "under_1h": 228, "under_4h": 366, "under_24h": 791, "over_24h": 285 }, "orders": 47, "paid_orders": 31, "order_value": 357465, "paid_order_value": 213480, "collected": 250379, "avg_revenue_per_order": 5327.21, "avg_revenue_per_lead": 128.33, "avg_order_value": 7605.64, "cvr": 2.41 }, { "campaign_uid": "d42c6812-5f64-4c3c-a86f-0479389a40fd", "campaign_name": "VIDEO EDITING  - 4", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 1017, "today_leads": 21, "daily_avg_leads": 32.81, "inbound_leads": 0, "outbound_leads": 1017, "new_leads": 257, "qualified": 158, "processing": 479, "won": 15, "lost": 55, "unfit": 53, "lost_rate": 5.41, "win_rate": 1.47, "reassigned": 51, "connected": 1007, "connected_pct": 99.02, "connect_avg_hours": 11.02, "connect_buckets": { "under_15m": 169, "under_1h": 134, "under_4h": 187, "under_24h": 403, "over_24h": 114 }, "orders": 17, "paid_orders": 6, "order_value": 868795, "paid_order_value": 1795, "collected": 6695, "avg_revenue_per_order": 393.82, "avg_revenue_per_lead": 6.58, "avg_order_value": 51105.59, "cvr": 1.67 }, { "campaign_uid": "1e5c6df5-393e-4672-b805-3339a95d04ef", "campaign_name": "Organic- Video Editing", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 473, "today_leads": 18, "daily_avg_leads": 15.26, "inbound_leads": 473, "outbound_leads": 0, "new_leads": 93, "qualified": 88, "processing": 223, "won": 18, "lost": 36, "unfit": 15, "lost_rate": 7.61, "win_rate": 3.81, "reassigned": 44, "connected": 470, "connected_pct": 99.37, "connect_avg_hours": 11.85, "connect_buckets": { "under_15m": 90, "under_1h": 71, "under_4h": 77, "under_24h": 160, "over_24h": 72 }, "orders": 38, "paid_orders": 10, "order_value": 3664390, "paid_order_value": 624393, "collected": 1449291, "avg_revenue_per_order": 38139.24, "avg_revenue_per_lead": 3064.04, "avg_order_value": 96431.32, "cvr": 8.03 }, { "campaign_uid": "__none__", "campaign_name": "— No campaign —", "campaign_type": null, "department": null, "is_active": true, "leads": 457, "today_leads": 16, "daily_avg_leads": 14.74, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 33, "qualified": 31, "processing": 246, "won": 86, "lost": 47, "unfit": 14, "lost_rate": 10.28, "win_rate": 18.82, "reassigned": 2, "connected": 456, "connected_pct": 99.78, "connect_avg_hours": 0.96, "connect_buckets": { "under_15m": 398, "under_1h": 34, "under_4h": 10, "under_24h": 11, "over_24h": 3 }, "orders": 89, "paid_orders": 48, "order_value": 4167831, "paid_order_value": 710839, "collected": 1599686, "avg_revenue_per_order": 17974, "avg_revenue_per_lead": 3500.41, "avg_order_value": 46829.56, "cvr": 19.47 }, { "campaign_uid": "9c284466-d0c2-483a-a82c-86b9ff466254", "campaign_name": "Organic- English", "campaign_type": "INBOUND", "department": "c74f2c51-29f1-4287-aa78-eccd0be73e42", "is_active": true, "is_orphan": false, "leads": 447, "today_leads": 15, "daily_avg_leads": 14.42, "inbound_leads": 447, "outbound_leads": 0, "new_leads": 95, "qualified": 69, "processing": 202, "won": 36, "lost": 31, "unfit": 14, "lost_rate": 6.94, "win_rate": 8.05, "reassigned": 41, "connected": 441, "connected_pct": 98.66, "connect_avg_hours": 14.55, "connect_buckets": { "under_15m": 75, "under_1h": 62, "under_4h": 71, "under_24h": 164, "over_24h": 69 }, "orders": 46, "paid_orders": 32, "order_value": 685972, "paid_order_value": 237984, "collected": 353334, "avg_revenue_per_order": 7681.17, "avg_revenue_per_lead": 790.46, "avg_order_value": 14912.43, "cvr": 10.29 }, { "campaign_uid": "8f589daa-23e4-4113-8a12-1476aec56385", "campaign_name": "Meta - Video Editing #2", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 293, "today_leads": 8, "daily_avg_leads": 9.45, "inbound_leads": 0, "outbound_leads": 293, "new_leads": 97, "qualified": 28, "processing": 128, "won": 3, "lost": 22, "unfit": 15, "lost_rate": 7.51, "win_rate": 1.02, "reassigned": 24, "connected": 281, "connected_pct": 95.9, "connect_avg_hours": 13.86, "connect_buckets": { "under_15m": 30, "under_1h": 38, "under_4h": 76, "under_24h": 95, "over_24h": 42 }, "orders": 2, "paid_orders": 0, "order_value": 170000, "paid_order_value": 0, "collected": 1250, "avg_revenue_per_order": 625, "avg_revenue_per_lead": 4.27, "avg_order_value": 85000, "cvr": 0.68 }, { "campaign_uid": "431a2f72-bb88-4b29-a0b7-8f1905e8cf6d", "campaign_name": "Meta - Video Editing #3", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 203, "today_leads": 4, "daily_avg_leads": 6.55, "inbound_leads": 0, "outbound_leads": 203, "new_leads": 40, "qualified": 33, "processing": 100, "won": 1, "lost": 19, "unfit": 10, "lost_rate": 9.36, "win_rate": 0.49, "reassigned": 7, "connected": 201, "connected_pct": 99.01, "connect_avg_hours": 8.7, "connect_buckets": { "under_15m": 29, "under_1h": 22, "under_4h": 59, "under_24h": 77, "over_24h": 14 }, "orders": 7, "paid_orders": 1, "order_value": 742477, "paid_order_value": 77477, "collected": 650109, "avg_revenue_per_order": 92872.71, "avg_revenue_per_lead": 3202.51, "avg_order_value": 106068.14, "cvr": 3.45 }, { "campaign_uid": "f83d0c8c-d952-4a3c-ab41-079865a210d5", "campaign_name": "VIDEO PRODUCTION DTSR -1 ", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 203, "today_leads": 3, "daily_avg_leads": 6.55, "inbound_leads": 0, "outbound_leads": 203, "new_leads": 58, "qualified": 42, "processing": 78, "won": 2, "lost": 7, "unfit": 16, "lost_rate": 3.45, "win_rate": 0.99, "reassigned": 24, "connected": 199, "connected_pct": 98.03, "connect_avg_hours": 16.74, "connect_buckets": { "under_15m": 28, "under_1h": 23, "under_4h": 33, "under_24h": 78, "over_24h": 37 }, "orders": 4, "paid_orders": 2, "order_value": 380000, "paid_order_value": 80000, "collected": 120100, "avg_revenue_per_order": 30025, "avg_revenue_per_lead": 591.63, "avg_order_value": 95000, "cvr": 1.97 }, { "campaign_uid": "6704a9bd-7431-44c7-ab67-402ea555a63a", "campaign_name": "Meta-Graphic Designing", "campaign_type": "OUTBOUND", "department": "fde75315-d787-406f-9f3b-03acec9da0f1", "is_active": true, "is_orphan": false, "leads": 177, "today_leads": 1, "daily_avg_leads": 5.71, "inbound_leads": 0, "outbound_leads": 177, "new_leads": 34, "qualified": 58, "processing": 68, "won": 1, "lost": 4, "unfit": 12, "lost_rate": 2.26, "win_rate": 0.56, "reassigned": 2, "connected": 176, "connected_pct": 99.44, "connect_avg_hours": 14.39, "connect_buckets": { "under_15m": 22, "under_1h": 31, "under_4h": 29, "under_24h": 74, "over_24h": 20 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "f6ace68a-00d8-4a7f-9406-6be43f13b8f0", "campaign_name": "Video Editing Workshop #4", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 167, "today_leads": 0, "daily_avg_leads": 5.39, "inbound_leads": 0, "outbound_leads": 167, "new_leads": 45, "qualified": 23, "processing": 75, "won": 9, "lost": 11, "unfit": 4, "lost_rate": 6.59, "win_rate": 5.39, "reassigned": 44, "connected": 167, "connected_pct": 100, "connect_avg_hours": 8.21, "connect_buckets": { "under_15m": 29, "under_1h": 30, "under_4h": 27, "under_24h": 73, "over_24h": 8 }, "orders": 18, "paid_orders": 17, "order_value": 90085, "paid_order_value": 5085, "collected": 5185, "avg_revenue_per_order": 288.06, "avg_revenue_per_lead": 31.05, "avg_order_value": 5004.72, "cvr": 10.78 }, { "campaign_uid": "d767d516-ff79-48eb-a270-5c464dae0a8e", "campaign_name": "Meta - Digital marketing", "campaign_type": "OUTBOUND", "department": "4bcf68dd-5f18-4792-bc69-2601f7d9e10c", "is_active": true, "is_orphan": false, "leads": 144, "today_leads": 1, "daily_avg_leads": 4.65, "inbound_leads": 0, "outbound_leads": 144, "new_leads": 29, "qualified": 41, "processing": 55, "won": 1, "lost": 9, "unfit": 9, "lost_rate": 6.25, "win_rate": 0.69, "reassigned": 17, "connected": 144, "connected_pct": 100, "connect_avg_hours": 19.41, "connect_buckets": { "under_15m": 20, "under_1h": 21, "under_4h": 28, "under_24h": 48, "over_24h": 27 }, "orders": 1, "paid_orders": 0, "order_value": 150000, "paid_order_value": 0, "collected": 8499, "avg_revenue_per_order": 8499, "avg_revenue_per_lead": 59.02, "avg_order_value": 150000, "cvr": 0.69 }, { "campaign_uid": "98fc1d22-9b1d-4f63-ab13-0186056a3282", "campaign_name": "WORKSHOP ALL CREATORS IG BIO (IG)", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 123, "today_leads": 0, "daily_avg_leads": 3.97, "inbound_leads": 123, "outbound_leads": 0, "new_leads": 59, "qualified": 22, "processing": 32, "won": 4, "lost": 2, "unfit": 4, "lost_rate": 1.63, "win_rate": 3.25, "reassigned": 90, "connected": 121, "connected_pct": 98.37, "connect_avg_hours": 14.65, "connect_buckets": { "under_15m": 11, "under_1h": 21, "under_4h": 37, "under_24h": 27, "over_24h": 25 }, "orders": 4, "paid_orders": 3, "order_value": 95897, "paid_order_value": 897, "collected": 997, "avg_revenue_per_order": 249.25, "avg_revenue_per_lead": 8.11, "avg_order_value": 23974.25, "cvr": 3.25 }, { "campaign_uid": "fe5043f1-1916-4fd7-bfe2-664dae762062", "campaign_name": "Organic - Workshop Video Editing", "campaign_type": "INBOUND", "department": "75433a65-b87f-4c73-bc86-97dbd67269c8", "is_active": true, "is_orphan": false, "leads": 70, "today_leads": 0, "daily_avg_leads": 2.26, "inbound_leads": 70, "outbound_leads": 0, "new_leads": 19, "qualified": 10, "processing": 25, "won": 12, "lost": 2, "unfit": 2, "lost_rate": 2.86, "win_rate": 17.14, "reassigned": 41, "connected": 69, "connected_pct": 98.57, "connect_avg_hours": 8.12, "connect_buckets": { "under_15m": 6, "under_1h": 15, "under_4h": 17, "under_24h": 27, "over_24h": 4 }, "orders": 16, "paid_orders": 15, "order_value": 34501, "paid_order_value": 4501, "collected": 5001, "avg_revenue_per_order": 312.56, "avg_revenue_per_lead": 71.44, "avg_order_value": 2156.31, "cvr": 22.86 }, { "campaign_uid": "4b2c84ae-b6bd-41e0-8213-0c298771db2d", "campaign_name": "DADDY ROOT - META VID EDTNG", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 25, "today_leads": 0, "daily_avg_leads": 0.81, "inbound_leads": 0, "outbound_leads": 25, "new_leads": 8, "qualified": 1, "processing": 12, "won": 0, "lost": 4, "unfit": 0, "lost_rate": 16, "win_rate": 0, "reassigned": 1, "connected": 24, "connected_pct": 96, "connect_avg_hours": 9.79, "connect_buckets": { "under_15m": 5, "under_1h": 5, "under_4h": 5, "under_24h": 5, "over_24h": 4 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "ccb485a6-0390-4521-b011-758c1cc9fed4", "campaign_name": "CONTECH - META #5", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 9, "today_leads": 4, "daily_avg_leads": 0.29, "inbound_leads": 0, "outbound_leads": 9, "new_leads": 5, "qualified": 0, "processing": 2, "won": 0, "lost": 0, "unfit": 2, "lost_rate": 0, "win_rate": 0, "reassigned": 0, "connected": 6, "connected_pct": 66.67, "connect_avg_hours": 18.87, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 2, "under_24h": 2, "over_24h": 2 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "fa6ad4a3-37a9-4102-b185-3d6d8c149812", "campaign_name": "Motion Graphics", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 6, "today_leads": 0, "daily_avg_leads": 0.19, "inbound_leads": 0, "outbound_leads": 6, "new_leads": 0, "qualified": 0, "processing": 5, "won": 0, "lost": 1, "unfit": 0, "lost_rate": 16.67, "win_rate": 0, "reassigned": 1, "connected": 6, "connected_pct": 100, "connect_avg_hours": 8.22, "connect_buckets": { "under_15m": 1, "under_1h": 1, "under_4h": 0, "under_24h": 4, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "ecf69391-9609-430e-b188-d3e1eb985bcc", "campaign_name": "Organic - Workshop Video Editing #3", "campaign_type": "INBOUND", "department": "75433a65-b87f-4c73-bc86-97dbd67269c8", "is_active": true, "is_orphan": false, "leads": 3, "today_leads": 0, "daily_avg_leads": 0.1, "inbound_leads": 3, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 1, "won": 2, "lost": 0, "unfit": 0, "lost_rate": 0, "win_rate": 66.67, "reassigned": 1, "connected": 3, "connected_pct": 100, "connect_avg_hours": 0.28, "connect_buckets": { "under_15m": 2, "under_1h": 1, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 5, "paid_orders": 4, "order_value": 96197, "paid_order_value": 1197, "collected": 1697, "avg_revenue_per_order": 339.4, "avg_revenue_per_lead": 565.67, "avg_order_value": 19239.4, "cvr": 166.67 }, { "campaign_uid": "5b5256ff-54bd-411d-9e4e-200d6243514d", "campaign_name": "AHADHIN ROOT IG BIO", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 3, "today_leads": 0, "daily_avg_leads": 0.1, "inbound_leads": 3, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 3, "won": 0, "lost": 0, "unfit": 0, "lost_rate": 0, "win_rate": 0, "reassigned": 0, "connected": 3, "connected_pct": 100, "connect_avg_hours": 38.47, "connect_buckets": { "under_15m": 1, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 2 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "fc67bac3-2b55-4904-9488-886a3d9157f5", "campaign_name": "Workshop Video Editing - 2", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 2, "today_leads": 0, "daily_avg_leads": 0.06, "inbound_leads": 0, "outbound_leads": 2, "new_leads": 1, "qualified": 0, "processing": 1, "won": 0, "lost": 0, "unfit": 0, "lost_rate": 0, "win_rate": 0, "reassigned": 2, "connected": 2, "connected_pct": 100, "connect_avg_hours": 9.26, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 1, "under_24h": 1, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": 0, "avg_order_value": null, "cvr": 0 }, { "campaign_uid": "cf3c8580-6212-4069-ab76-8203187d686d", "campaign_name": "Meta - Video Editing", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 2, "today_leads": 0, "daily_avg_leads": 0.06, "inbound_leads": 0, "outbound_leads": 2, "new_leads": 0, "qualified": 0, "processing": 2, "won": 0, "lost": 0, "unfit": 0, "lost_rate": 0, "win_rate": 0, "reassigned": 0, "connected": 2, "connected_pct": 100, "connect_avg_hours": 0.01, "connect_buckets": { "under_15m": 2, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 9, "paid_orders": 2, "order_value": 830799, "paid_order_value": 140799, "collected": 178536, "avg_revenue_per_order": 19837.33, "avg_revenue_per_lead": 89268, "avg_order_value": 92311, "cvr": 450 }, { "campaign_uid": "92611295-50e6-425f-a6f2-76ea69f5f0f3", "campaign_name": "Digital Marketing Webinar", "campaign_type": "INBOUND", "department": "4bcf68dd-5f18-4792-bc69-2601f7d9e10c", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 1, "paid_orders": 0, "order_value": 95000, "paid_order_value": 0, "collected": 100, "avg_revenue_per_order": 100, "avg_revenue_per_lead": null, "avg_order_value": 95000, "cvr": null }, { "campaign_uid": "cf055a9b-3abd-43b0-9306-df27d6c3fdea", "campaign_name": "Ahdin ep - Organic", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "033c8c02-8923-4d96-a8a0-23d73e920071", "campaign_name": "Career Expo April", "campaign_type": "INBOUND", "department": null, "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "77c56b2d-8433-4849-b0af-38dbba972742", "campaign_name": "DEVU ROOT IG BIO", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "806586bb-2517-4b89-b5c0-d9b84add317e", "campaign_name": "FARSHAD ROOT IG BIO", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "e6fdcf18-e35f-45f6-a5de-d014f4541a06", "campaign_name": "Farshad root - Organic", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "67f902ce-610e-457a-bb41-b54540814cef", "campaign_name": "I’m Farsha - Organic", "campaign_type": "INBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "ff45fb85-d9d0-4f93-bf62-f6d889121bf8", "campaign_name": "VIDEO EDITING WORKSHOP - 3 ENG META", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "f28a0efe-090d-49d3-b984-c282755aba9b", "campaign_name": "Video Editing Distribution - 2", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "d4bbb99a-077c-41e6-a541-de1573ed7d38", "campaign_name": "demo jil", "campaign_type": "OUTBOUND", "department": "e7d9de26-a327-487d-a9f7-4146ccd55fc1", "is_active": true, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }, { "campaign_uid": "a0ad763d-bdac-4a4d-813e-575d97b614ea", "campaign_name": "Test Campaign", "campaign_type": null, "department": null, "is_active": false, "is_orphan": false, "leads": 0, "today_leads": 0, "daily_avg_leads": 0, "inbound_leads": 0, "outbound_leads": 0, "new_leads": 0, "qualified": 0, "processing": 0, "won": 0, "lost": 0, "unfit": 0, "lost_rate": null, "win_rate": null, "reassigned": 0, "connected": 0, "connected_pct": null, "connect_avg_hours": null, "connect_buckets": { "under_15m": 0, "under_1h": 0, "under_4h": 0, "under_24h": 0, "over_24h": 0 }, "orders": 0, "paid_orders": 0, "order_value": 0, "paid_order_value": 0, "collected": 0, "avg_revenue_per_order": null, "avg_revenue_per_lead": null, "avg_order_value": null, "cvr": null }], "totals": { "campaigns": 32, "active_campaigns": 22, "leads": 8516, "today_leads": 179, "daily_avg_leads": 274.71, "won": 237, "lost": 636, "unfit": 453, "lost_rate": 7.47, "connected": 8398, "connected_pct": 98.61, "connect_avg_hours": 12.66, "orders": 329, "paid_orders": 180, "order_value": 14153614, "paid_order_value": 2367253, "collected": 5064351, "avg_revenue_per_order": 15393.16, "avg_revenue_per_lead": 594.69, "cvr": 3.86 }, "meta": { "from": "2026-08-01", "to": "2026-08-31", "days": 31, "timezone": "Asia/Kolkata", "today": "2026-08-31" } } };
+  const ROWS = RAW.data.rows, TOTALS = RAW.data.totals, META = RAW.data.meta;
+
+  /* ---------- formatting ---------- */
+  const LOC = "en-IN";
+  const nf = (v, d = 0) => v == null ? null : v.toLocaleString(LOC, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const int = v => nf(v, 0);
+  const dec = (v, d = 2) => nf(v, d);
+  const dash = '<span class="dim">—</span>';
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (r, k) => r[k] == null ? 0 : r[k];
+  const compact = v => {
+    const a = Math.abs(v);
+    if (a >= 1e7) return (v / 1e7).toFixed(a >= 1e8 ? 0 : 2) + " Cr";
+    if (a >= 1e5) return (v / 1e5).toFixed(a >= 1e6 ? 0 : 1) + " L";
+    if (a >= 1000) return (v / 1000).toFixed(a >= 1e4 ? 0 : 1) + "k";
+    return int(v);
+  };
+
+  /* ---------- departments ---------- */
+  const deptIds = [...new Set(ROWS.map(r => r.department).filter(Boolean))];
+  const deptLabel = id => id ? "D" + (deptIds.indexOf(id) + 1) : null;
+
+  /* ---------- groups (saved per browser) ---------- */
+  const STORE_KEY = "cfl.groups.v1";
+  let GS = { groups: [], assign: {}, seeded: false };
+  const SUGGEST = [
+    [/meta/i, "Meta ads"],
+    [/organic|ig ?bio|\bep\b/i, "Organic & IG"],
+    [/workshop|webinar|expo/i, "Workshops"],
+    [/.*/, "Other"]
+  ];
+  function loadGroups() {
+    try {
+      const s = localStorage.getItem(STORE_KEY);
+      if (s) { const p = JSON.parse(s); if (p && Array.isArray(p.groups)) { GS = { seeded: true, ...p }; return; } }
+    } catch (e) { }
+    seedGroups();
+  }
+  function saveGroups() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(GS)); note("Saved in this browser."); }
+    catch (e) { note("Can’t save here — groups last for this visit only."); }
+  }
+  function seedGroups() {
+    const names = [], assign = {};
+    ROWS.forEach(r => {
+      const hit = SUGGEST.find(([re]) => re.test(r.campaign_name))[1];
+      if (!names.includes(hit)) names.push(hit);
+      assign[r.campaign_uid] = "g" + names.indexOf(hit);
+    });
+    GS = { groups: names.map((n, i) => ({ id: "g" + i, name: n })), assign, seeded: true };
+  }
+  const groupById = id => GS.groups.find(g => g.id === id);
+  const groupOf = r => { const g = groupById(GS.assign[r.campaign_uid]); return g ? g.name : "Ungrouped"; };
+  const groupIdOf = r => groupById(GS.assign[r.campaign_uid]) ? GS.assign[r.campaign_uid] : "";
+  function groupOrder() {
+    const seen = [...new Set(GS.groups.map(g => g.name))].filter(n => ROWS.some(r => groupOf(r) === n));
+    if (ROWS.some(r => groupOf(r) === "Ungrouped")) seen.push("Ungrouped");
+    return seen;
+  }
+  function note(t) { const n = document.getElementById("savenote"); if (n) n.textContent = t; }
+
+  /* ---------- shared model ---------- */
+  const MAXLEADS = Math.max(...ROWS.map(r => r.leads || 0), 1);
+  const rate = (v, goodAt, badAt) => {
+    if (v == null) return dash;
+    const cls = v >= goodAt ? "g" : (v <= badAt ? "c" : "w");
+    return '<span class="pill ' + cls + '">' + dec(v, 2) + '%</span>';
+  };
+  const badRate = (v, warnAt, critAt) => {
+    if (v == null) return dash;
+    const cls = v >= critAt ? "c" : (v >= warnAt ? "w" : "g");
+    return '<span class="pill ' + cls + '">' + dec(v, 2) + '%</span>';
+  };
+  const BUCKETS = [["under_15m", "≤15m", "m1"], ["under_1h", "≤1h", "m2"], ["under_4h", "≤4h", "m3"],
+  ["under_24h", "≤24h", "m4"], ["over_24h", ">24h", "m5"]];
+  const STAGES = [["new_leads", "New", "o1"], ["qualified", "Qualified", "o2"], ["processing", "Processing", "o3"],
+  ["won", "Won", "o4"], ["lost", "Lost", "n1"], ["unfit", "Unfit", "n2"]];
+
+  const GROUPS = [
+    { id: "id", label: "Campaign" }, { id: "vol", label: "Volume" }, { id: "pipe", label: "Pipeline" },
+    { id: "rate", label: "Conversion" }, { id: "resp", label: "Response speed" }, { id: "rev", label: "Revenue" }
+  ];
+
+  const COLS = [
+    {
+      g: "id", k: "campaign_name", label: "Campaign", type: "text", cell: (r, i) =>
+        '<div class="namecell"><button class="exp" type="button" data-uid="' + r.campaign_uid + '" aria-expanded="' +
+        state.open.has(r.campaign_uid) + '" aria-label="Full record for ' + esc(r.campaign_name) + '">' +
+        (state.open.has(r.campaign_uid) ? "–" : "+") + '</button>' +
+        '<span class="rank">' + (i + 1) + '</span><span class="nm" title="' + esc(r.campaign_name) + '">' + esc(r.campaign_name) + '</span></div>'
+    },
+    {
+      g: "id", k: "__group", label: "Group", type: "text", cell: r =>
+        '<span class="tag grp">' + esc(groupOf(r)) + '</span>'
+    },
+    {
+      g: "id", k: "campaign_type", label: "Channel", type: "text", cell: r => r.campaign_type
+        ? '<span class="tag ' + (r.campaign_type === "OUTBOUND" ? "out" : "inb") + '">' + r.campaign_type.toLowerCase() + '</span>'
+        : '<span class="tag na">unassigned</span>'
+    },
+    {
+      g: "id", k: "department", label: "Dept", type: "text", cell: r => r.department
+        ? '<span class="tag" title="' + r.department + '">' + deptLabel(r.department) + '</span>' : dash
+    },
+    {
+      g: "id", k: "is_active", label: "State", type: "text", cell: r => {
+        const on = r.is_active !== false, orph = r.is_orphan === true ? " · orphan" : "";
+        return '<span class="stat' + (on ? "" : " off") + '"><i class="dot' + (on ? "" : " off") + '"></i>' + (on ? "active" : "paused") + orph + '</span>';
+      }
+    },
+
+    {
+      g: "vol", k: "leads", label: "Leads", cls: "lead-cell", cell: r =>
+        '<span>' + int(r.leads) + '</span><span class="bar"><i style="width:' + ((r.leads / MAXLEADS) * 100).toFixed(1) + '%"></i></span>'
+    },
+    { g: "vol", k: "today_leads", label: "Today" },
+    { g: "vol", k: "daily_avg_leads", label: "Daily avg", d: 2 },
+    { g: "vol", k: "inbound_leads", label: "Inbound" },
+    { g: "vol", k: "outbound_leads", label: "Outbound" },
+
+    { g: "pipe", k: "new_leads", label: "New" }, { g: "pipe", k: "qualified", label: "Qualified" },
+    { g: "pipe", k: "processing", label: "Processing" }, { g: "pipe", k: "won", label: "Won" },
+    { g: "pipe", k: "lost", label: "Lost" }, { g: "pipe", k: "unfit", label: "Unfit" },
+    { g: "pipe", k: "reassigned", label: "Reassigned" },
+
+    { g: "rate", k: "win_rate", label: "Win %", cell: r => r.leads ? rate(r.win_rate, 1, 0.5) : dash },
+    { g: "rate", k: "lost_rate", label: "Lost %", cell: r => r.leads ? badRate(r.lost_rate, 8, 12) : dash },
+    { g: "rate", k: "cvr", label: "CVR %", cell: r => r.leads ? rate(r.cvr, 3, 1) : dash },
+
+    { g: "resp", k: "connected", label: "Connected" },
+    { g: "resp", k: "connected_pct", label: "Connect %", cell: r => r.leads ? rate(r.connected_pct, 95, 85) : dash },
+    { g: "resp", k: "connect_avg_hours", label: "Avg hrs", d: 2, cell: r => r.connected ? dec(r.connect_avg_hours, 2) : dash },
+    {
+      g: "resp", k: "__mix", label: "Mix", sort: false, cell: r => {
+        const b = r.connect_buckets || {}, tot = BUCKETS.reduce((s, x) => s + (b[x[0]] || 0), 0);
+        if (!tot) return dash;
+        return '<span class="mix" title="' + esc(BUCKETS.map(x => x[1] + " " + (b[x[0]] || 0)).join(" · ")) + '">' +
+          BUCKETS.map(x => '<i class="' + x[2] + '" style="width:' + (((b[x[0]] || 0) / tot) * 100).toFixed(2) + '%"></i>').join("") + '</span>';
+      }
+    },
+    ...BUCKETS.map(x => ({ g: "resp", k: "connect_buckets." + x[0], label: x[1] })),
+
+    { g: "rev", k: "orders", label: "Orders" }, { g: "rev", k: "paid_orders", label: "Paid" },
+    { g: "rev", k: "order_value", label: "Order value" }, { g: "rev", k: "paid_order_value", label: "Paid value" },
+    { g: "rev", k: "collected", label: "Collected" },
+    { g: "rev", k: "avg_order_value", label: "Avg order", d: 2, cell: r => r.orders ? dec(r.avg_order_value, 2) : dash },
+    { g: "rev", k: "avg_revenue_per_order", label: "Rev / order", d: 2, cell: r => r.orders ? dec(r.avg_revenue_per_order, 2) : dash },
+    { g: "rev", k: "avg_revenue_per_lead", label: "Rev / lead", d: 2, cell: r => r.leads ? dec(r.avg_revenue_per_lead, 2) : dash }
+  ];
+  const val = (r, k) => k === "__group" ? groupOf(r)
+    : k.includes(".") ? (r[k.split(".")[0]] || {})[k.split(".")[1]] : r[k];
+  COLS.forEach((c, i) => { c.i = i; c.first = i === 0 || COLS[i - 1].g !== c.g; });
+
+  /* ---------- aggregation ---------- */
+  function agg(rows) {
+    const S = k => rows.reduce((s, r) => s + num(r, k), 0);
+    const B = k => rows.reduce((s, r) => s + ((r.connect_buckets || {})[k] || 0), 0);
+    const leads = S("leads"), conn = S("connected"), orders = S("orders"), coll = S("collected"), ov = S("order_value");
+    const pct = (a, b) => b ? (a / b) * 100 : null;
+    const a = {
+      n: rows.length, leads, today_leads: S("today_leads"),
+      inbound_leads: S("inbound_leads"), outbound_leads: S("outbound_leads"),
+      new_leads: S("new_leads"), qualified: S("qualified"), processing: S("processing"),
+      won: S("won"), lost: S("lost"), unfit: S("unfit"), reassigned: S("reassigned"),
+      connected: conn, orders, paid_orders: S("paid_orders"),
+      order_value: ov, paid_order_value: S("paid_order_value"), collected: coll,
+      daily_avg_leads: leads / META.days,
+      win_rate: pct(S("won"), leads), lost_rate: pct(S("lost"), leads), cvr: pct(orders, leads),
+      connected_pct: pct(conn, leads),
+      connect_avg_hours: conn ? rows.reduce((s, r) => s + num(r, "connect_avg_hours") * num(r, "connected"), 0) / conn : null,
+      avg_order_value: orders ? ov / orders : null,
+      avg_revenue_per_order: orders ? coll / orders : null,
+      avg_revenue_per_lead: leads ? coll / leads : null
+    };
+    BUCKETS.forEach(x => a[x[0]] = B(x[0]));
+    a.bucket_total = BUCKETS.reduce((s, x) => s + a[x[0]], 0);
+    return a;
+  }
+  function byGroup(rows) {
+    const m = new Map();
+    groupOrder().forEach(n => m.set(n, []));
+    rows.forEach(r => { const n = groupOf(r); if (!m.has(n)) m.set(n, []); m.get(n).push(r); });
+    return [...m].filter(([, rs]) => rs.length).map(([name, rs]) => ({ name, rows: rs, a: agg(rs) }));
+  }
+
+  /* ---------- state ---------- */
+  const state = {
+    tab: "ledger", q: "", type: "all", st: "all", roll: "campaign",
+    groups: new Set(GROUPS.map(g => g.id)), gsel: new Set(), sort: "leads", dir: -1, sort2: "leads", dir2: -1, open: new Set()
+  };
+
+  /* ---------- static chrome ---------- */
+  const fmtDate = s => new Date(s + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  document.getElementById("eyebrow").textContent = "Lead & revenue performance · " + META.timezone.replace("_", " ");
+  document.getElementById("mastmeta").innerHTML = [
+    ["Reporting window", fmtDate(META.from) + " – " + fmtDate(META.to)],
+    ["Days", META.days],
+    ["Campaigns", TOTALS.campaigns + " · " + TOTALS.active_campaigns + " active"],
+    ["Generated", fmtDate(META.today)]
+  ].map(([k, v]) => '<div><span>' + k + '</span><b>' + v + '</b></div>').join("");
+  document.getElementById("srcnote").innerHTML =
+    "Source: <code>json.json</code> — " + ROWS.length + " campaign rows, status " + RAW.status + " “" + esc(RAW.message) +
+    "”. Monetary figures are shown exactly as returned — the API supplies no currency unit. Note: totals report " +
+    TOTALS.active_campaigns + " active campaigns while " + ROWS.filter(r => r.is_active !== false).length +
+    " rows carry <code>is_active: true</code>; both are shown unaltered.";
+  document.getElementById("kpis").innerHTML = [
+    ["Leads", int(TOTALS.leads), int(TOTALS.today_leads) + " today · <em>" + dec(TOTALS.daily_avg_leads, 2) + "/day</em>"],
+    ["Connected", dec(TOTALS.connected_pct, 2) + "%", int(TOTALS.connected) + " leads · <em>" + dec(TOTALS.connect_avg_hours, 2) + " h avg</em>"],
+    ["Won", int(TOTALS.won), "<em>lost</em> " + int(TOTALS.lost) + " · <em>unfit</em> " + int(TOTALS.unfit)],
+    ["Lost rate", dec(TOTALS.lost_rate, 2) + "%", "of all leads in window"],
+    ["Orders", int(TOTALS.orders), int(TOTALS.paid_orders) + " paid · <em>CVR</em> " + dec(TOTALS.cvr, 2) + "%"],
+    ["Order value", int(TOTALS.order_value), "<em>paid</em> " + int(TOTALS.paid_order_value)],
+    ["Collected", int(TOTALS.collected), "<em>per order</em> " + dec(TOTALS.avg_revenue_per_order, 2)],
+    ["Revenue / lead", dec(TOTALS.avg_revenue_per_lead, 2), "across " + int(TOTALS.leads) + " leads"]
+  ].map(([l, v, s]) => '<div class="kpi"><div class="k-label">' + l + '</div><div class="k-val">' + v +
+    '</div><div class="k-sub">' + s + '</div></div>').join("");
+  document.getElementById("legend").innerHTML = BUCKETS.map(x =>
+    '<span><i class="' + x[2] + '"></i>' + x[1] + '</span>').join("");
+  document.getElementById("deptlist").innerHTML = deptIds.map(id => {
+    const n = ROWS.filter(r => r.department === id).length;
+    return '<li><span class="tag">' + deptLabel(id) + '</span><code>' + id + '</code><span>' + n + ' campaign' + (n > 1 ? "s" : "") + '</span></li>';
+  }).join("") + '<li><span class="tag na">—</span><span>' + ROWS.filter(r => !r.department).length + ' campaigns with no department</span></li>';
+
+  /* ---------- controls ---------- */
+  const seg = (el, opts, key, after) => {
+    el.innerHTML = opts.map(([v, l]) => '<button type="button" data-v="' + v + '" aria-pressed="' + (state[key] === v) + '">' + l + '</button>').join("");
+    el.onclick = e => {
+      const b = e.target.closest("button"); if (!b) return; state[key] = b.dataset.v;
+      [...el.children].forEach(c => c.setAttribute("aria-pressed", c === b)); (after || render)();
+    };
+  };
+  seg(document.getElementById("segType"), [["all", "all"], ["OUTBOUND", "outbound"], ["INBOUND", "inbound"], ["none", "unassigned"]], "type");
+  seg(document.getElementById("segState"), [["all", "all"], ["active", "active"], ["paused", "paused"], ["leads", "has leads"]], "st");
+  seg(document.getElementById("segRoll"), [["campaign", "by campaign"], ["group", "by group"]], "roll");
+
+  const chips = document.getElementById("grpChips");
+  chips.innerHTML = GROUPS.filter(g => g.id !== "id").map(g =>
+    '<button class="chip" type="button" data-g="' + g.id + '" aria-pressed="true">' + g.label + '</button>').join("");
+  chips.onclick = e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    const g = b.dataset.g, on = !state.groups.has(g);
+    on ? state.groups.add(g) : state.groups.delete(g);
+    b.setAttribute("aria-pressed", on); b.classList.toggle("off", !on); render();
+  };
+
+  document.getElementById("q").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+  const themeBtn = document.getElementById("themeBtn");
+  const modes = ["auto", "light", "dark"]; let mi = 0;
+  themeBtn.onclick = () => {
+    mi = (mi + 1) % 3; const m = modes[mi];
+    m === "auto" ? document.documentElement.removeAttribute("data-theme") : document.documentElement.setAttribute("data-theme", m);
+    themeBtn.textContent = "theme: " + m;
+  };
+
+  document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+    state.tab = t.dataset.tab;
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+    ["ledger", "snapshot", "charts"].forEach(v => document.getElementById("view-" + v).hidden = v !== state.tab);
+    document.getElementById("colWrap").hidden = state.tab !== "ledger";
+    render();
+  });
+
+  /* ---------- filtering ---------- */
+  function filtered() {
+    let out = ROWS.filter(r => {
+      if (state.type === "none" ? r.campaign_type != null : state.type !== "all" && r.campaign_type !== state.type) return false;
+      if (state.st === "active" && r.is_active === false) return false;
+      if (state.st === "paused" && r.is_active !== false) return false;
+      if (state.st === "leads" && !(r.leads > 0)) return false;
+      if (state.gsel.size && !state.gsel.has(groupOf(r))) return false;
+      if (state.q) {
+        const hay = (r.campaign_name + " " + r.campaign_uid + " " + (r.department || "") + " " + (deptLabel(r.department) || "") +
+          " " + (r.campaign_type || "") + " " + groupOf(r)).toLowerCase();
+        if (!hay.includes(state.q)) return false;
+      }
+      return true;
+    });
+    return out;
+  }
+  function sortRows(rows, k, d) {
+    return rows.slice().sort((a, b) => {
+      let x = val(a, k), y = val(b, k);
+      if (typeof x === "string" || typeof y === "string") return String(x ?? "").localeCompare(String(y ?? "")) * d;
+      x = x == null ? -Infinity : (x === true ? 1 : x === false ? 0 : x);
+      y = y == null ? -Infinity : (y === true ? 1 : y === false ? 0 : y);
+      return (x - y) * d || a.campaign_name.localeCompare(b.campaign_name);
+    });
+  }
+
+  /* ---------- ledger ---------- */
+  const visCols = () => COLS.filter(c => state.groups.has(c.g));
+  function headHTML() {
+    const cols = visCols();
+    const gr = GROUPS.filter(g => state.groups.has(g.id)).map(g => {
+      const n = cols.filter(c => c.g === g.id).length;
+      if (g.id === "id") return '<th class="c-name">Campaign</th><th colspan="' + (n - 1) + '">Setup</th>';
+      return '<th colspan="' + n + '" class="gsep">' + g.label + '</th>';
+    }).join("");
+    const cr = cols.map(c => {
+      const on = state.sort === c.k, sortable = c.sort !== false;
+      return '<th class="' + (c.k === "campaign_name" ? "c-name" : "") + (c.first && c.k !== "campaign_name" ? " gsep" : "") + '"' +
+        (sortable ? ' data-k="' + c.k + '" tabindex="0" role="button"' : ' style="cursor:default"') +
+        (on ? ' data-dir="' + state.dir + '"' : '') + '>' + c.label + '<span class="arw">' + (on && state.dir === 1 ? "▲" : "▼") + '</span></th>';
+    }).join("");
+    return [gr, cr];
+  }
+  function rowHTML(r, i) {
+    return visCols().map(c => {
+      const cls = (c.k === "campaign_name" ? "c-name " : "") + (c.first && c.k !== "campaign_name" ? "gsep " : "") + (c.cls || "");
+      let html;
+      if (c.cell) html = c.cell(r, i);
+      else { const v = val(r, c.k); html = v == null ? dash : (c.d ? dec(v, c.d) : int(v)); }
+      return '<td class="' + cls.trim() + '">' + html + '</td>';
+    }).join("");
+  }
+  function detailHTML(r) {
+    const b = r.connect_buckets || {}, tot = BUCKETS.reduce((s, x) => s + (b[x[0]] || 0), 0);
+    const fields = [
+      ["Campaign UID", '<span class="uid">' + r.campaign_uid + '</span>'],
+      ["Group", esc(groupOf(r))],
+      ["Department", r.department ? deptLabel(r.department) + ' <span class="uid">' + r.department + '</span>' : "—"],
+      ["Channel", r.campaign_type || "unassigned"],
+      ["Active", r.is_active === true ? "yes" : "no"],
+      ["Orphan", r.is_orphan == null ? "not reported" : (r.is_orphan ? "yes" : "no")],
+      ["Leads", int(r.leads)], ["Today", int(r.today_leads)], ["Daily avg", dec(r.daily_avg_leads, 2)],
+      ["Inbound", int(r.inbound_leads)], ["Outbound", int(r.outbound_leads)],
+      ["New", int(r.new_leads)], ["Qualified", int(r.qualified)], ["Processing", int(r.processing)],
+      ["Won", int(r.won)], ["Lost", int(r.lost)], ["Unfit", int(r.unfit)], ["Reassigned", int(r.reassigned)],
+      ["Win rate", dec(r.win_rate, 2) + "%"], ["Lost rate", dec(r.lost_rate, 2) + "%"], ["CVR", dec(r.cvr, 2) + "%"],
+      ["Connected", int(r.connected)], ["Connected %", dec(r.connected_pct, 2) + "%"],
+      ["Avg time to connect", dec(r.connect_avg_hours, 2) + " h"],
+      ["Orders", int(r.orders)], ["Paid orders", int(r.paid_orders)],
+      ["Order value", int(r.order_value)], ["Paid order value", int(r.paid_order_value)],
+      ["Collected", int(r.collected)], ["Avg order value", dec(r.avg_order_value, 2)],
+      ["Revenue / order", dec(r.avg_revenue_per_order, 2)], ["Revenue / lead", dec(r.avg_revenue_per_lead, 2)]
+    ];
+    const speed = tot ? '<div class="speedbar">' + BUCKETS.map(x => {
+      const p = ((b[x[0]] || 0) / tot) * 100;
+      return '<i class="' + x[2] + '" style="width:' + p.toFixed(2) + '%" data-tip="' +
+        esc(x[1] + ": " + int(b[x[0]] || 0) + "  (" + p.toFixed(1) + "%)") + '"></i>';
+    }).join("") + '</div>'
+      : '<p class="uid">No connected leads in this window.</p>';
+    return '<tr class="detail"><td colspan="' + visCols().length + '"><div class="drawer">' +
+      '<div><h4>Time to first contact</h4>' + speed +
+      '<div class="legend">' + BUCKETS.map(x => '<span><i class="' + x[2] + '"></i>' + x[1] + ' · ' + int(b[x[0]] || 0) + '</span>').join("") + '</div></div>' +
+      '<div><h4>Full record — ' + esc(r.campaign_name) + '</h4><dl class="dl">' +
+      fields.map(([k, v]) => '<div><dt>' + k + '</dt><dd>' + v + '</dd></div>').join("") + '</dl></div></div></td></tr>';
+  }
+  function footHTML(rows) {
+    const a = agg(rows);
+    const T = {
+      campaign_name: '<span class="namecell"><span class="rank">Σ</span>' + rows.length + ' campaigns in view</span>',
+      __group: "", campaign_type: "", department: "", is_active: "", __mix: "",
+      leads: int(a.leads), today_leads: int(a.today_leads), daily_avg_leads: dec(a.daily_avg_leads, 2),
+      inbound_leads: int(a.inbound_leads), outbound_leads: int(a.outbound_leads),
+      new_leads: int(a.new_leads), qualified: int(a.qualified), processing: int(a.processing),
+      won: int(a.won), lost: int(a.lost), unfit: int(a.unfit), reassigned: int(a.reassigned),
+      win_rate: a.leads ? dec(a.win_rate, 2) + "%" : dash, lost_rate: a.leads ? dec(a.lost_rate, 2) + "%" : dash,
+      cvr: a.leads ? dec(a.cvr, 2) + "%" : dash,
+      connected: int(a.connected), connected_pct: a.leads ? dec(a.connected_pct, 2) + "%" : dash,
+      connect_avg_hours: a.connect_avg_hours == null ? dash : dec(a.connect_avg_hours, 2),
+      orders: int(a.orders), paid_orders: int(a.paid_orders),
+      order_value: int(a.order_value), paid_order_value: int(a.paid_order_value), collected: int(a.collected),
+      avg_order_value: a.orders ? dec(a.avg_order_value, 2) : dash,
+      avg_revenue_per_order: a.orders ? dec(a.avg_revenue_per_order, 2) : dash,
+      avg_revenue_per_lead: a.leads ? dec(a.avg_revenue_per_lead, 2) : dash
+    };
+    BUCKETS.forEach(x => T["connect_buckets." + x[0]] = int(a[x[0]]));
+    return visCols().map(c => {
+      const cls = (c.k === "campaign_name" ? "c-name " : "") + (c.first && c.k !== "campaign_name" ? "gsep " : "");
+      const tag = c.k === "campaign_name" ? "th" : "td";
+      return '<' + tag + ' class="' + cls.trim() + '">' + (T[c.k] ?? "") + '</' + tag + '>';
+    }).join("");
+  }
+  function renderLedger(rows) {
+    const sorted = sortRows(rows, state.sort, state.dir);
+    const [gr, cr] = headHTML();
+    document.getElementById("grpRow").innerHTML = gr;
+    document.getElementById("colRow").innerHTML = cr;
+    document.getElementById("tbody").innerHTML = sorted.map((r, i) =>
+      '<tr class="row' + (r.leads ? "" : " zero") + '">' + rowHTML(r, i) + '</tr>' +
+      (state.open.has(r.campaign_uid) ? detailHTML(r) : "")).join("");
+    document.getElementById("footRow").innerHTML = footHTML(sorted);
+    document.getElementById("empty").hidden = sorted.length > 0;
+    document.getElementById("count").textContent =
+      "showing " + sorted.length + " of " + ROWS.length + " campaigns · " + visCols().length + " columns";
+  }
+
+  /* ---------- snapshot ---------- */
+  const SNAP = [
+    { k: "campaign_name", label: "Campaign", left: true },
+    { k: "__group", label: "Group", left: true },
+    { k: "leads", label: "Total leads" },
+    { k: "orders", label: "Orders" },
+    { k: "cvr", label: "CVR" }
+  ];
+  function renderSnapshot(rows) {
+    const byG = state.roll === "group";
+    const cols = byG
+      ? [{ k: "__group", label: "Group", left: true }, { k: "n", label: "Campaigns" }, { k: "leads", label: "Total leads" },
+      { k: "orders", label: "Orders" }, { k: "cvr", label: "CVR" }]
+      : SNAP;
+    let items;
+    if (byG) {
+      items = byGroup(rows).map(g => ({ name: g.name, sub: g.a.n + " campaign" + (g.a.n > 1 ? "s" : ""), a: g.a, n: g.a.n }));
+    } else {
+      items = rows.map(r => ({ name: r.campaign_name, sub: groupOf(r), a: r, n: 1, r }));
+    }
+    const key = state.sort2, d = state.dir2;
+    items.sort((x, y) => {
+      let a = key === "__group" ? (byG ? x.name : x.sub) : key === "campaign_name" ? x.name : (x.a[key] ?? -Infinity);
+      let b = key === "__group" ? (byG ? y.name : y.sub) : key === "campaign_name" ? y.name : (y.a[key] ?? -Infinity);
+      if (typeof a === "string") return a.localeCompare(b) * d;
+      return ((a ?? -Infinity) - (b ?? -Infinity)) * d || x.name.localeCompare(y.name);
+    });
+    const maxL = Math.max(...items.map(i => i.a.leads || 0), 1);
+    document.getElementById("colRow2").innerHTML = cols.map(c => {
+      const on = state.sort2 === c.k;
+      return '<th class="' + (c.left ? "c-name" : "") + '" data-k="' + c.k + '" tabindex="0" role="button"' +
+        (on ? ' data-dir="' + d + '"' : '') + ' style="' + (c.left ? "" : "min-width:120px") + '">' + c.label +
+        '<span class="arw">' + (on && d === 1 ? "▲" : "▼") + '</span></th>';
+    }).join("");
+    document.getElementById("tbody2").innerHTML = items.map((it, i) => {
+      const a = it.a, cv = a.leads ? a.cvr : null;
+      return '<tr class="row' + (a.leads ? "" : " zero") + '">' +
+        '<td class="c-name"><div class="namecell"><span class="rank">' + (i + 1) + '</span>' +
+        '<span class="nm" title="' + esc(it.name) + '">' + esc(it.name) + '</span></div></td>' +
+        (byG ? '<td>' + int(it.n) + '</td>' : '<td class="c-grp"><span class="tag grp">' + esc(it.sub) + '</span></td>') +
+        '<td class="lead-cell"><span>' + int(a.leads) + '</span><span class="bar"><i style="width:' +
+        (((a.leads || 0) / maxL) * 100).toFixed(1) + '%"></i></span></td>' +
+        '<td>' + int(a.orders) + '</td>' +
+        '<td>' + (cv == null ? dash : rate(cv, 3, 1)) + '</td></tr>';
+    }).join("");
+    const t = agg(rows);
+    document.getElementById("footRow2").innerHTML =
+      '<th class="c-name"><span class="namecell"><span class="rank">Σ</span>' +
+      (byG ? items.length + " groups" : rows.length + " campaigns") + ' in view</span></th>' +
+      (byG ? '<td>' + int(rows.length) + '</td>' : '<td></td>') +
+      '<td>' + int(t.leads) + '</td><td>' + int(t.orders) + '</td>' +
+      '<td>' + (t.leads ? dec(t.cvr, 2) + "%" : dash) + '</td>';
+    document.getElementById("empty2").hidden = items.length > 0;
+    document.getElementById("count2").textContent = byG
+      ? "showing " + items.length + " groups · " + rows.length + " of " + ROWS.length + " campaigns"
+      : "showing " + rows.length + " of " + ROWS.length + " campaigns";
+  }
+
+  /* ---------- charts ---------- */
+  const niceMax = v => {
+    if (v <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+  };
+  function axisHTML(max, fmt) {
+    const t = [0, .25, .5, .75, 1];
+    return '<div class="axis">' + t.map(f => '<span style="left:' + (f * 100) + '%">' + fmt(max * f) + '</span>').join("") + '</div>';
+  }
+  function gridHTML() { return '<div class="gridlines">' + [25, 50, 75, 100].map(p => '<i style="left:' + p + '%"></i>').join("") + '</div>'; }
+
+  function barChart(items, fmt) {
+    const max = niceMax(Math.max(...items.map(i => i.v), 0));
+    return '<div class="plot pre">' + items.map((it, i) =>
+      '<div class="blab" title="' + esc(it.label) + '">' + esc(it.label) + '</div>' +
+      '<div class="btrack">' + gridHTML() +
+      '<span class="bfill" style="--w:' + ((it.v / max) * 100).toFixed(2) + '%;--i:' + i + '" data-tip="' + esc(it.tip) + '"></span></div>' +
+      '<div class="bval">' + it.vlab + '</div>').join("") + axisHTML(max, fmt) + '</div>';
+  }
+  function stackChart(items, series) {
+    return '<div class="plot noval pre">' + items.map((it, i) => {
+      const tot = series.reduce((s, x) => s + (it.vals[x[0]] || 0), 0);
+      const segs = series.filter(x => (it.vals[x[0]] || 0) > 0).map(x => {
+        const v = it.vals[x[0]], p = (v / tot) * 100;
+        return '<i class="' + x[2] + '" style="--w:' + p.toFixed(2) + '%;--i:' + i + '" data-tip="' +
+          esc(it.label + "\n" + x[1] + ": " + int(v) + "  (" + p.toFixed(1) + "%)") + '"></i>';
+      }).join("");
+      return '<div class="blab" title="' + esc(it.label) + '">' + esc(it.label) + '</div>' +
+        '<div class="btrack"><span class="stack" data-tip="' + esc(it.label + "\n" + int(tot) + " leads") + '">' + segs + '</span></div>';
+    }).join("") + '</div>';
+  }
+  function groupedChart(items, series) {
+    const max = niceMax(Math.max(...items.flatMap(i => series.map(s => i.vals[s[0]] || 0)), 0));
+    return '<div class="plot noval pre">' + items.map((it, i) =>
+      '<div class="blab" title="' + esc(it.label) + '">' + esc(it.label) + '</div>' +
+      '<div class="btrack">' + gridHTML() + '<span class="grp3">' + series.map((s, j) => {
+        const v = it.vals[s[0]] || 0;
+        return '<span class="bfill ' + s[2] + '" style="--w:' + ((v / max) * 100).toFixed(2) + '%;--i:' + (i * 3 + j) + '" data-tip="' +
+          esc(it.label + "\n" + s[1] + ": " + int(v)) + '"></span>';
+      }).join("") + '</span></div>').join("") + axisHTML(max, compact) + '</div>';
+  }
+  const legendHTML = series => '<div class="legend">' + series.map(s =>
+    '<span><i class="' + s[2] + '"></i>' + s[1] + '</span>').join("") + '</div>';
+
+  function renderCharts(rows) {
+    const groups = byGroup(rows);
+    const hasGroups = GS.groups.length > 0;
+    document.getElementById("chartHint").innerHTML = hasGroups ? "" :
+      '<div class="hint" style="margin-bottom:16px">No groups yet — every chart is plotting single campaigns. ' +
+      'Open <b>Groups</b> in the header to bundle campaigns into <b>Meta</b>, <b>Organic</b>, <b>Workshops</b> ' +
+      'or anything else you name.</div>';
+    const items = hasGroups ? groups.map(g => ({ label: g.name, a: g.a, n: g.a.n }))
+      : sortRows(rows, "leads", -1).slice(0, 14).map(r => ({ label: r.campaign_name, a: r, n: 1 }));
+    const unit = hasGroups ? "group" : "campaign";
+    const live = items.filter(i => i.a.leads > 0);
+
+    const bucketsOf = a => a.bucket_total != null ? a : (() => {
+      const o = {}; BUCKETS.forEach(x => o[x[0]] = (a.connect_buckets || {})[x[0]] || 0);
+      o.bucket_total = BUCKETS.reduce((s, x) => s + o[x[0]], 0); return o;
+    })();
+
+    const c1 = live.length ? barChart(
+      live.slice().sort((a, b) => b.a.leads - a.a.leads).map(i => ({
+        label: i.label, v: i.a.leads, vlab: int(i.a.leads),
+        tip: i.label + "\nLeads: " + int(i.a.leads) + "\nOrders: " + int(i.a.orders) +
+          "\nCVR: " + (i.a.leads ? dec(i.a.cvr, 2) + "%" : "—")
+      })),
+      compact) : '<div class="empty">Nothing to plot.</div>';
+
+    const c2 = live.length ? stackChart(
+      live.slice().sort((a, b) => b.a.leads - a.a.leads).map(i => ({ label: i.label, vals: i.a })), STAGES)
+      + legendHTML(STAGES) : '<div class="empty">Nothing to plot.</div>';
+
+    const speedItems = items.map(i => ({ label: i.label, vals: bucketsOf(i.a) })).filter(i => i.vals.bucket_total > 0);
+    const c3 = speedItems.length ? stackChart(speedItems, BUCKETS) + legendHTML(BUCKETS)
+      : '<div class="empty">No connected leads to plot.</div>';
+
+    const REV = [["order_value", "Order value", "s1"], ["paid_order_value", "Paid value", "s2"], ["collected", "Collected", "s3"]];
+    const revItems = items.filter(i => i.a.order_value > 0 || i.a.collected > 0)
+      .sort((a, b) => b.a.order_value - a.a.order_value).map(i => ({ label: i.label, vals: i.a }));
+    const c4 = revItems.length ? groupedChart(revItems, REV) + legendHTML(REV)
+      : '<div class="empty">No revenue recorded for this selection.</div>';
+
+    const t = agg(rows);
+    document.getElementById("charts").innerHTML =
+      card("Lead volume by " + unit, "Total leads in the window, high to low. Hover any bar for orders and CVR.", c1) +
+      card("Where the leads sit", "Every lead by current status. The four live stages run light to dark; " +
+        "closed-out leads sit in grey. Bars are 100% wide, so the shape is the mix, not the size.", c2) +
+      card("Time to first contact", "Connected leads by how long the first touch took — darkest is fastest. " +
+        "Also 100% wide.", c3) +
+      card("Revenue by " + unit, "Booked, paid and collected on one shared axis. Collected is " +
+        (t.order_value ? dec((t.collected / t.order_value) * 100, 1) : "0") + "% of booked value in this selection.", c4);
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      document.querySelectorAll("#charts .plot.pre").forEach(p => p.classList.remove("pre"))));
+  }
+  const card = (h, sub, body) => '<section class="card"><h3>' + h + '</h3><p class="sub">' + sub + '</p>' + body + '</section>';
+
+  /* ---------- group filter chips ---------- */
+  function renderGroupFilter() {
+    const names = groupOrder();
+    const el = document.getElementById("grpFilter");
+    document.getElementById("grpFilterWrap").hidden = names.length < 2;
+    el.innerHTML = names.map(n => '<button class="chip" type="button" data-n="' + esc(n) + '" aria-pressed="' +
+      state.gsel.has(n) + '">' + esc(n) + '</button>').join("");
+    document.getElementById("grpBtnLabel").textContent = "Groups" + (GS.groups.length ? " · " + GS.groups.length : "");
+  }
+  document.getElementById("grpFilter").onclick = e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    const n = b.dataset.n;
+    state.gsel.has(n) ? state.gsel.delete(n) : state.gsel.add(n);
+    renderGroupFilter(); render();
+  };
+
+  /* ---------- group manager ---------- */
+  const modal = document.getElementById("modal");
+  let mq = "";
+  function renderGlist() {
+    const counts = {};
+    ROWS.forEach(r => { const id = groupIdOf(r); counts[id] = (counts[id] || 0) + 1; });
+    document.getElementById("glist").innerHTML = GS.groups.map(g =>
+      '<li><input type="text" value="' + esc(g.name) + '" data-id="' + g.id + '" maxlength="28" aria-label="Group name">' +
+      '<span class="n">' + (counts[g.id] || 0) + '</span>' +
+      '<button class="del" type="button" data-del="' + g.id + '" aria-label="Delete group ' + esc(g.name) + '">×</button></li>').join("")
+      || '<li style="border:0;background:transparent;color:var(--muted);font-size:12px;padding:0">No groups yet.</li>';
+  }
+  function renderAssign() {
+    const list = ROWS.filter(r => !mq || r.campaign_name.toLowerCase().includes(mq));
+    document.getElementById("assign").innerHTML = list.map(r =>
+      '<li><span class="an">' + esc(r.campaign_name) + '<em>' + int(r.leads) + ' leads</em></span>' +
+      '<select data-uid="' + r.campaign_uid + '" aria-label="Group for ' + esc(r.campaign_name) + '">' +
+      '<option value="">— Ungrouped —</option>' +
+      GS.groups.map(g => '<option value="' + g.id + '"' + (groupIdOf(r) === g.id ? " selected" : "") + '>' + esc(g.name) + '</option>').join("") +
+      '</select></li>').join("") || '<li style="border:0;color:var(--muted);font-size:12px">No campaign matches.</li>';
+  }
+  const renderModal = () => { renderGlist(); renderAssign(); };
+  function openModal() {
+    modal.hidden = false; mq = ""; document.getElementById("mq").value = "";
+    note(GS.seeded ? "Starter groups were suggested from campaign names — rename, reassign or clear them." : "");
+    renderModal(); document.getElementById("newGrp").focus();
+  }
+  function closeModal() { modal.hidden = true; GS.seeded = false; saveGroups(); renderGroupFilter(); render(); }
+  document.getElementById("grpBtn").onclick = openModal;
+  document.getElementById("closeModal").onclick = closeModal;
+  document.getElementById("doneModal").onclick = closeModal;
+  modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
+  document.getElementById("addGrp").onclick = () => {
+    const inp = document.getElementById("newGrp"), name = inp.value.trim();
+    if (!name) return;
+    GS.groups.push({ id: "g" + Date.now().toString(36), name });
+    inp.value = ""; saveGroups(); renderModal(); renderGroupFilter();
+  };
+  document.getElementById("newGrp").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); document.getElementById("addGrp").click(); }
+  });
+  document.getElementById("glist").addEventListener("input", e => {
+    const inp = e.target.closest("input[data-id]"); if (!inp) return;
+    const g = groupById(inp.dataset.id);
+    if (g) { g.name = inp.value.trim() || "Untitled"; state.gsel.clear(); saveGroups(); renderGroupFilter(); }
+  });
+  document.getElementById("glist").addEventListener("click", e => {
+    const b = e.target.closest("[data-del]"); if (!b) return;
+    const id = b.dataset.del;
+    GS.groups = GS.groups.filter(g => g.id !== id);
+    Object.keys(GS.assign).forEach(k => { if (GS.assign[k] === id) delete GS.assign[k]; });
+    state.gsel.clear(); saveGroups(); renderModal(); renderGroupFilter();
+  });
+  document.getElementById("assign").addEventListener("change", e => {
+    const s = e.target.closest("select[data-uid]"); if (!s) return;
+    s.value ? GS.assign[s.dataset.uid] = s.value : delete GS.assign[s.dataset.uid];
+    saveGroups(); renderGlist(); renderGroupFilter();
+  });
+  document.getElementById("mq").addEventListener("input", e => { mq = e.target.value.trim().toLowerCase(); renderAssign(); });
+  document.getElementById("suggestGrp").onclick = () => {
+    seedGroups(); state.gsel.clear(); saveGroups();
+    note("Suggested " + GS.groups.length + " groups from campaign names."); renderModal(); renderGroupFilter();
+  };
+  document.getElementById("clearGrp").onclick = () => {
+    GS = { groups: [], assign: {}, seeded: false }; state.gsel.clear();
+    saveGroups(); note("All groups cleared."); renderModal(); renderGroupFilter();
+  };
+
+  /* ---------- tooltip ---------- */
+  const tip = document.getElementById("tip");
+  document.addEventListener("mouseover", e => {
+    const t = e.target.closest("[data-tip]"); if (!t) return;
+    tip.textContent = t.dataset.tip; tip.hidden = false;
+  });
+  document.addEventListener("mousemove", e => {
+    if (tip.hidden) return;
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.min(e.clientX + pad, innerWidth - w - 8) + "px";
+    tip.style.top = Math.max(8, e.clientY - h - pad) + "px";
+  });
+  document.addEventListener("mouseout", e => { if (e.target.closest("[data-tip]")) tip.hidden = true; });
+
+  /* ---------- table events ---------- */
+  document.getElementById("colRow").addEventListener("click", e => {
+    const th = e.target.closest("th[data-k]"); if (!th) return;
+    const k = th.dataset.k;
+    if (state.sort === k) state.dir = -state.dir;
+    else { state.sort = k; state.dir = (k === "campaign_name" || k === "campaign_type" || k === "department" || k === "__group") ? 1 : -1; }
+    render();
+  });
+  document.getElementById("colRow2").addEventListener("click", e => {
+    const th = e.target.closest("th[data-k]"); if (!th) return;
+    const k = th.dataset.k;
+    if (state.sort2 === k) state.dir2 = -state.dir2;
+    else { state.sort2 = k; state.dir2 = (k === "campaign_name" || k === "__group") ? 1 : -1; }
+    render();
+  });
+  [["colRow"], ["colRow2"]].forEach(([id]) =>
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.target.click(); }
+    }));
+  document.getElementById("tbody").addEventListener("click", e => {
+    const b = e.target.closest(".exp"); if (!b) return;
+    const uid = b.dataset.uid;
+    state.open.has(uid) ? state.open.delete(uid) : state.open.add(uid);
+    render();
+  });
+
+  /* ---------- go ---------- */
+  function render() {
+    const rows = filtered();
+    if (state.tab === "ledger") renderLedger(rows);
+    else if (state.tab === "snapshot") renderSnapshot(rows);
+    else renderCharts(rows);
+  }
+  loadGroups();
+  renderGroupFilter();
+  render();
+</script>
