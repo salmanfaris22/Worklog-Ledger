@@ -205,6 +205,8 @@ input[type=number]::placeholder{color:var(--ink-3)}
 .calc-row.head{border-top:0; padding:0 0 8px; font-size:11px; font-weight:600; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3)}
 .calc-row.head span:not(:first-child){text-align:right}
 .calc-row.foot{border-top:1px solid var(--line); margin-top:6px; padding-top:12px; font-weight:700}
+.calc-row.def .calc-name{color:var(--ink-2); font-weight:500; font-style:italic}
+.calc-row.def .calc-h{color:var(--ink-3)}
 .calc-name{display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; min-width:0; overflow-wrap:anywhere}
 .calc-name .swatch{width:10px; height:10px; border-radius:3px; background:var(--c); box-shadow:0 0 0 1px var(--line) inset; flex:none}
 .calc-h,.calc-amt{font-family:var(--f-mono); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
@@ -440,17 +442,17 @@ select:disabled{opacity:.45; cursor:not-allowed}
       <option value="asc">Oldest first</option>
       <option value="hours">Longest day first</option>
     </select>
-    <button id="round" aria-pressed="true" title="Snap start and end times that sit just outside the shift onto its edges">Rounding: on</button>
-    <select id="rscope" title="Which entries get snapped to the shift edges">
-      <option value="first">day&rsquo;s first start and last end only</option>
+    <button id="round" aria-pressed="true" title="Snap start and end times onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9">Slot rounding: on</button>
+    <select id="rscope" title="Which entries get snapped to the slot edges">
       <option value="all">every entry</option>
+      <option value="first">day&rsquo;s first start and last end only</option>
     </select>
-    <select id="tol" title="How far outside the shift a time may sit and still get snapped onto its edge">
-      <option value="10">only within 10 min of the shift</option>
-      <option value="15">only within 15 min of the shift</option>
-      <option value="20">only within 20 min of the shift</option>
-      <option value="30">only within 30 min of the shift</option>
-      <option value="1440">any distance</option>
+    <select id="tol" title="How far a time may move to reach the nearest slot edge">
+      <option value="15">only within 15 min of a slot edge</option>
+      <option value="30">only within 30 min of a slot edge</option>
+      <option value="45">only within 45 min of a slot edge</option>
+      <option value="60">only within 60 min of a slot edge</option>
+      <option value="90">any distance &mdash; every time lands on a slot</option>
     </select>
     <span class="spacer"></span>
     <button id="csv">Copy CSV</button>
@@ -872,34 +874,49 @@ function effRate(id, key, cat){
 }
 function hm24(min){ return String(Math.floor(min / 60)).padStart(2,"0") + ":" + String(min % 60).padStart(2,"0"); }
 
-/* ---------------------------- time rounding ---------------------------- */
-/* The only two boundaries we snap to are the shift's own edges. Nothing snaps to a round
-   hour in the middle of the day, so on a 9-to-6 shift 8:51 am becomes 9:00 am and 6:07 pm
-   becomes 6:00 pm, while 11:56 am stays 11:56 am and 12:04 pm stays 12:04 pm.
-   Rounding still only ever shortens a shift, never lengthens it: a start may move FORWARD
-   onto the shift start, an end may move BACK onto the shift end, and only from outside -
-   a 9:03 am start and a 5:52 pm end are already inside the shift, so they keep their clock.
+/* ---------------------------- slot rounding ---------------------------- */
+/* Times land on a 3-hour slot grid anchored to the shift start, so a 9-to-6 shift reads as
+   9 to 12, 12 to 3, 3 to 6, 6 to 9 and nothing in between: 8:55 am and 9:12 am both become
+   9:00 am, 12:51 pm becomes 12:00 pm, 6:21 pm becomes 6:00 pm.
+   Each time moves to whichever slot edge is nearer; a time sitting exactly between two edges
+   moves to the later one. The tolerance caps how far a time may travel to reach an edge - at
+   "any distance" every time lands on the grid, at 15 min only times already hugging an edge do.
+   An entry that would collapse onto a single edge keeps its logged clock, and the logged time
+   stays struck through beside the snapped one either way.
    scope "first" touches only the two times that read as the day's shift - the entry that
    opens the day and the one that closes it - and leaves everything between them alone. */
-var ROUND = { on:true, tol:15, scope:"first" };
+var SLOT = 180;                                // the slot length: 3 hours
+var TOLS = [15, 30, 45, 60, 90];               // 90 = half a slot = every time snaps
+var ROUND = { on:true, tol:90, scope:"all" };
 try {
-  var rst = JSON.parse(localStorage.getItem("worklog.round") || "null");
+  var rst = JSON.parse(localStorage.getItem("worklog.slotround") || "null");
   if (rst && typeof rst === "object"){
     ROUND.on = rst.on !== false;
-    if (+rst.tol) ROUND.tol = +rst.tol;
+    if (TOLS.indexOf(+rst.tol) > -1) ROUND.tol = +rst.tol;
     if (rst.scope === "all" || rst.scope === "first") ROUND.scope = rst.scope;
   }
 } catch (e) {}
-function saveRound(){ try { localStorage.setItem("worklog.round", JSON.stringify(ROUND)); } catch (e) {} }
-function snapLabel(){
-  return "shift edges (" + hhmm(SHIFT.start).trim() + " and " + hhmm(SHIFT.end).trim() + ")";
+function saveRound(){ try { localStorage.setItem("worklog.slotround", JSON.stringify(ROUND)); } catch (e) {} }
+function hr12(m){                              // "9", "12", "3", "6:30" - compact, for slot names
+  m = ((m % 1440) + 1440) % 1440;
+  var h = Math.floor(m / 60) % 12 || 12;
+  return h + (m % 60 ? ":" + String(m % 60).padStart(2,"0") : "");
 }
-function snapTo(m, dir){                       // dir: +1 a start, -1 an end
-  var b = dir > 0 ? SHIFT.start : SHIFT.end;
-  var gap = dir > 0 ? b - m : m - b;           // how far the time sits OUTSIDE the shift
-  return gap > 0 && gap <= ROUND.tol ? b : m;
+function slotLabel(){                          // "9 to 12, 12 to 3, 3 to 6, 6 to 9"
+  var out = [];
+  for (var i = 0; i < 4; i++)
+    out.push(hr12(SHIFT.start + i * SLOT) + " to " + hr12(SHIFT.start + (i + 1) * SLOT));
+  return out.join(", ");
 }
-/* the entry that opens each day and the one that closes it - ties go to the shorter entry */
+function snapLabel(){ return "3-hour slots (" + slotLabel() + ")"; }
+function slotEdge(m){                          // the nearer edge of the slot holding m, ties later
+  var lo = SHIFT.start + Math.floor((m - SHIFT.start) / SLOT) * SLOT;
+  return (m - lo) * 2 >= SLOT ? lo + SLOT : lo;
+}
+function snapTo(m){
+  var b = slotEdge(m);
+  return Math.abs(b - m) <= ROUND.tol ? b : m;
+}
 function edgesOf(list){
   var open = {}, close = {};
   list.forEach(function(e){
@@ -920,9 +937,9 @@ function applyRounding(){
   ALL.forEach(function(e){
     var s = e.rawStart, en = e.rawEnd;
     if (ROUND.on){
-      var s2 = (!edges || edges.open[e.id])  ? snapTo(s, 1)   : s;
-      var e2 = (!edges || edges.close[e.id]) ? snapTo(en, -1) : en;
-      if (e2 > s2){ s = s2; en = e2; }   // never let a short entry collapse to nothing
+      var s2 = (!edges || edges.open[e.id])  ? snapTo(s)  : s;
+      var e2 = (!edges || edges.close[e.id]) ? snapTo(en) : en;
+      if (e2 > s2){ s = s2; en = e2; }   // an entry that would collapse keeps its logged clock
     }
     e.start = s; e.end = en; e.autoMins = en - s;
     var ho = hoursOf(e.id);                 // a hand-typed hours figure wins over the clock
@@ -1145,7 +1162,13 @@ try { var sc = localStorage.getItem("worklog.currency"); if (sc && CURSYM[sc] !=
 
 function sym(){ return CURSYM[curCode] || ""; }
 function money(n){ return sym() + n.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }); }
-function rateOf(name){ var r = parseFloat(rates[name]); return isFinite(r) && r > 0 ? r : 0; }
+var defRate = "";
+try { defRate = localStorage.getItem("worklog.defrate") || ""; } catch (e) {}
+function saveDefRate(){ try { localStorage.setItem("worklog.defrate", defRate); } catch (e) {} }
+function ownRate(name){ var r = parseFloat(rates[name]); return isFinite(r) && r > 0 ? r : null; }
+function baseRate(){ var d = parseFloat(defRate); return isFinite(d) && d > 0 ? d : 0; }
+/* a category's own rate, else the fallback - so hours never silently price at zero */
+function rateOf(name){ var r = ownRate(name); return r == null ? baseRate() : r; }
 function saveRates(){ try { localStorage.setItem("worklog.rates", JSON.stringify(rates)); } catch (e) {} }
 
 function renderCalc(cats){
@@ -1161,6 +1184,16 @@ function renderCalc(cats){
         'aria-label="Hourly rate for ' + esc(c.name) + '" data-cat="' + esc(c.name) + '" value="' + esc(val) + '"></span>' +
     '</div>');
   });
+  var um = cats.reduce(function(t,c){ return t + (ownRate(c.name) == null ? c.mins : 0); }, 0);
+  out.push('<div class="calc-row def" id="calc-def">' +
+    '<span class="calc-name">Everything else</span>' +
+    '<span class="calc-h">' + (um ? decimalH(um) + ' h <em>' + dur(um) + '</em>'
+                                  : '<span class="dash">&mdash;</span>') + '</span>' +
+    '<span class="calc-rate"><span class="cur">' + esc(sym()) + '</span>' +
+      '<input class="rate defrate" type="number" min="0" step="any" inputmode="decimal" placeholder="0" ' +
+      'title="Rate for any category with no rate of its own \u2014 keeps unpriced hours from counting as zero" ' +
+      'aria-label="Fallback hourly rate" value="' + esc(defRate) + '"></span>' +
+  '</div>');
   out.push('<div class="calc-row foot"><span class="calc-name">Total</span>' +
     '<span class="calc-h" id="calc-hours"></span>' +
     '<span class="calc-amt" id="calc-amt"></span></div>');
@@ -1273,13 +1306,14 @@ function renderRoundNote(list){
     : r.n
       ? r.n + " of " + list.length + (list.length === 1 ? " time" : " times") + " snapped to the " + snapLabel() +
         " &middot; " + (r.d >= 0 ? "+" : "&minus;") + dur(Math.abs(r.d)) + " overall"
-      : "nothing sat close enough to a shift edge to snap";
+      : "every time already sat on a slot edge";
   $("#foot-round").innerHTML = ROUND.on
     ? (ROUND.scope === "first" ? "Only the entry that opens each day and the one that closes it are snapped; everything between keeps its logged clock. "
                                : "") +
-      "Times are snapped only to the " + snapLabel() + ", never to a round hour in the middle of the day: a start moves forward onto " +
-      hhmm(SHIFT.start).trim() + " and an end moves back onto " + hhmm(SHIFT.end).trim() + ", and only from within " +
-      ROUND.tol + " minutes outside the shift \u2014 rounding never adds time. The logged time stays struck through."
+      "Times are snapped to the " + snapLabel() + ": each one moves to whichever slot edge is nearer, " +
+      (ROUND.tol >= SLOT / 2 ? "however far that is"
+                             : "and only when it sits within " + ROUND.tol + " minutes of that edge") +
+      ". An entry that would collapse onto a single edge keeps its logged clock. The logged time stays struck through."
     : "Times are shown exactly as logged.";
 }
 
@@ -1355,7 +1389,7 @@ syncShiftUI();
 
 /* ---- time rounding ---- */
 function syncRoundUI(){
-  $("#round").textContent = "Rounding: " + (ROUND.on ? "on" : "off");
+  $("#round").textContent = "Slot rounding: " + (ROUND.on ? "on" : "off");
   $("#round").setAttribute("aria-pressed", ROUND.on ? "true" : "false");
   $("#tol").value = String(ROUND.tol);
   $("#rscope").value = ROUND.scope;
@@ -1380,23 +1414,28 @@ $("#cur").addEventListener("change", function(e){
 $("#calc").addEventListener("input", function(ev){
   var i = ev.target;
   if (!i || i.className.indexOf("rate") < 0 || i.tagName !== "INPUT") return;
+  if (i.classList.contains("defrate")){
+    defRate = i.value.trim(); saveDefRate(); render(); return;   // re-renders the "Everything else" hours
+  }
   var c = i.getAttribute("data-cat");
   if (i.value.trim() === "") delete rates[c]; else rates[c] = i.value.trim();
   saveRates(); updateMoney();
 });
 $("#apply-all").addEventListener("click", function(){
   var v = $("#rate-all").value.trim();
+  defRate = v; saveDefRate();          // and anything that turns up later
   [].forEach.call(document.querySelectorAll("#calc input.rate"), function(i){
     var c = i.getAttribute("data-cat");
     i.value = v;
+    if (!c) return;                    // the fallback row carries no category
     if (v === "") delete rates[c]; else rates[c] = v;
   });
   saveRates(); updateMoney();
 });
 $("#rate-clear").addEventListener("click", function(){
-  rates = {}; $("#rate-all").value = "";
+  rates = {}; defRate = ""; $("#rate-all").value = "";
   [].forEach.call(document.querySelectorAll("#calc input.rate"), function(i){ i.value = ""; });
-  saveRates(); updateMoney();
+  saveRates(); saveDefRate(); updateMoney();
 });
 
 $("#toggle-panel").addEventListener("click", function(){
