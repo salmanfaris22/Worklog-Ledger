@@ -443,9 +443,9 @@ select:disabled{opacity:.45; cursor:not-allowed}
       <option value="hours">Longest day first</option>
     </select>
     <button id="round" aria-pressed="true" title="Pull times back onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9. Nothing is ever pushed forward to the next slot.">Slot rounding: on</button>
-    <select id="rscope" title="Which entries get pulled back to a slot edge">
-      <option value="all">every entry</option>
+    <select id="rscope" title="Which times get pulled back to a slot edge">
       <option value="first">day&rsquo;s first start and last end only</option>
+      <option value="all">every entry</option>
     </select>
     <select id="tol" title="How far past a slot edge a time may sit and still drop back onto it">
       <option value="15">only up to 15 min past a slot edge</option>
@@ -883,20 +883,21 @@ function hm24(min){ return String(Math.floor(min / 60)).padStart(2,"0") + ":" + 
    jumping up to 6:00 pm, and 1:35 pm keeps its clock rather than jumping to 3:00 pm.
    An entry that would collapse onto a single edge keeps its logged clock, and the logged
    time stays struck through beside the snapped one either way.
-   scope "first" touches only the two times that read as the day's shift - the entry that
-   opens the day and the one that closes it - and leaves everything between them alone. */
+   scope "first", the default, touches only the two times that read as the day's shift - the
+   first start and the last end of the day's main category - and leaves everything between
+   them alone, so a 3:05 pm handover in the middle of the day keeps its logged clock. */
 var SLOT = 180;                                // the slot length: 3 hours
 var TOLS = [15, 20, 30, 45, 60];               // how far past an edge a time may still drop back
-var ROUND = { on:true, tol:30, scope:"all" };
+var ROUND = { on:true, tol:30, scope:"first" };
 try {
-  var rst = JSON.parse(localStorage.getItem("worklog.slotround") || "null");
+  var rst = JSON.parse(localStorage.getItem("worklog.slotround2") || "null");
   if (rst && typeof rst === "object"){
     ROUND.on = rst.on !== false;
     if (TOLS.indexOf(+rst.tol) > -1) ROUND.tol = +rst.tol;
     if (rst.scope === "all" || rst.scope === "first") ROUND.scope = rst.scope;
   }
 } catch (e) {}
-function saveRound(){ try { localStorage.setItem("worklog.slotround", JSON.stringify(ROUND)); } catch (e) {} }
+function saveRound(){ try { localStorage.setItem("worklog.slotround2", JSON.stringify(ROUND)); } catch (e) {} }
 function hr12(m){                              // "9", "12", "3", "6:30" - compact, for slot names
   m = ((m % 1440) + 1440) % 1440;
   var h = Math.floor(m / 60) % 12 || 12;
@@ -913,9 +914,28 @@ function snapTo(m){                            // back onto the edge just passed
   var past = (((m - SHIFT.start) % SLOT) + SLOT) % SLOT;
   return past > 0 && past <= ROUND.tol ? m - past : m;
 }
+/* The day's own work decides its edges: whichever category holds most of that day. An evening
+   meeting tacked onto a day of mentoring is not the day's closing time, so it keeps the clock
+   it was logged with and the last mentoring end is the one that gets snapped. */
+function mainCatOf(list){
+  var mins = {}, top = {};
+  list.forEach(function(e){
+    var d = mins[e.key] || (mins[e.key] = {});
+    d[e.cat] = (d[e.cat] || 0) + (e.rawEnd - e.rawStart);
+  });
+  Object.keys(mins).forEach(function(k){
+    var d = mins[k], best = null;
+    Object.keys(d).forEach(function(c){ if (best === null || d[c] > d[best]) best = c; });
+    top[k] = best;
+  });
+  return top;
+}
+/* the entry that opens each day and the one that closes it - ties go to the shorter entry */
 function edgesOf(list){
+  var main = mainCatOf(list);
   var open = {}, close = {};
   list.forEach(function(e){
+    if (e.cat !== main[e.key]) return;          // side work never sets the day's edges
     var o = open[e.key];
     if (!o || e.rawStart < o.rawStart || (e.rawStart === o.rawStart && e.rawEnd < o.rawEnd))
       open[e.key] = e;
@@ -1304,8 +1324,9 @@ function renderRoundNote(list){
         " &middot; " + (r.d >= 0 ? "+" : "&minus;") + dur(Math.abs(r.d)) + " overall"
       : "no time sat just past a slot edge";
   $("#foot-round").innerHTML = ROUND.on
-    ? (ROUND.scope === "first" ? "Only the entry that opens each day and the one that closes it are snapped; everything between keeps its logged clock. "
-                               : "") +
+    ? (ROUND.scope === "first"
+        ? "Only the day's own first start and last end are snapped \u2014 the day's main category sets those, so an evening meeting never becomes the closing time, and every time in between keeps its logged clock. "
+        : "") +
       "Times are pulled back to the " + snapLabel() + ", and only backwards: a time up to " + ROUND.tol +
       " minutes past a slot edge drops onto it, while anything further along keeps its logged clock \u2014 " +
       hr12(SHIFT.start + SLOT * 3) + ":12 becomes " + hr12(SHIFT.start + SLOT * 3) + ":00, but " +
