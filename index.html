@@ -442,17 +442,17 @@ select:disabled{opacity:.45; cursor:not-allowed}
       <option value="asc">Oldest first</option>
       <option value="hours">Longest day first</option>
     </select>
-    <button id="round" aria-pressed="true" title="Snap start and end times onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9">Slot rounding: on</button>
-    <select id="rscope" title="Which entries get snapped to the slot edges">
+    <button id="round" aria-pressed="true" title="Pull times back onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9. Nothing is ever pushed forward to the next slot.">Slot rounding: on</button>
+    <select id="rscope" title="Which entries get pulled back to a slot edge">
       <option value="all">every entry</option>
       <option value="first">day&rsquo;s first start and last end only</option>
     </select>
-    <select id="tol" title="How far a time may move to reach the nearest slot edge">
-      <option value="15">only within 15 min of a slot edge</option>
-      <option value="30">only within 30 min of a slot edge</option>
-      <option value="45">only within 45 min of a slot edge</option>
-      <option value="60">only within 60 min of a slot edge</option>
-      <option value="90">any distance &mdash; every time lands on a slot</option>
+    <select id="tol" title="How far past a slot edge a time may sit and still drop back onto it">
+      <option value="15">only up to 15 min past a slot edge</option>
+      <option value="20">only up to 20 min past a slot edge</option>
+      <option value="30">only up to 30 min past a slot edge</option>
+      <option value="45">only up to 45 min past a slot edge</option>
+      <option value="60">only up to 60 min past a slot edge</option>
     </select>
     <span class="spacer"></span>
     <button id="csv">Copy CSV</button>
@@ -875,19 +875,19 @@ function effRate(id, key, cat){
 function hm24(min){ return String(Math.floor(min / 60)).padStart(2,"0") + ":" + String(min % 60).padStart(2,"0"); }
 
 /* ---------------------------- slot rounding ---------------------------- */
-/* Times land on a 3-hour slot grid anchored to the shift start, so a 9-to-6 shift reads as
-   9 to 12, 12 to 3, 3 to 6, 6 to 9 and nothing in between: 8:55 am and 9:12 am both become
-   9:00 am, 12:51 pm becomes 12:00 pm, 6:21 pm becomes 6:00 pm.
-   Each time moves to whichever slot edge is nearer; a time sitting exactly between two edges
-   moves to the later one. The tolerance caps how far a time may travel to reach an edge - at
-   "any distance" every time lands on the grid, at 15 min only times already hugging an edge do.
-   An entry that would collapse onto a single edge keeps its logged clock, and the logged time
-   stays struck through beside the snapped one either way.
+/* Times are pulled BACK onto a 3-hour slot grid anchored to the shift start, so a 9-to-6
+   shift reads as 9 to 12, 12 to 3, 3 to 6, 6 to 9. A time that has only just passed a slot
+   edge drops onto it - 9:12 am becomes 9:00 am, 6:12 pm and 6:21 pm become 6:00 pm - and
+   the tolerance says how far past the edge still counts.
+   Nothing is ever pushed forward to the next slot: 5:40 pm keeps its clock rather than
+   jumping up to 6:00 pm, and 1:35 pm keeps its clock rather than jumping to 3:00 pm.
+   An entry that would collapse onto a single edge keeps its logged clock, and the logged
+   time stays struck through beside the snapped one either way.
    scope "first" touches only the two times that read as the day's shift - the entry that
    opens the day and the one that closes it - and leaves everything between them alone. */
 var SLOT = 180;                                // the slot length: 3 hours
-var TOLS = [15, 30, 45, 60, 90];               // 90 = half a slot = every time snaps
-var ROUND = { on:true, tol:90, scope:"all" };
+var TOLS = [15, 20, 30, 45, 60];               // how far past an edge a time may still drop back
+var ROUND = { on:true, tol:30, scope:"all" };
 try {
   var rst = JSON.parse(localStorage.getItem("worklog.slotround") || "null");
   if (rst && typeof rst === "object"){
@@ -909,13 +909,9 @@ function slotLabel(){                          // "9 to 12, 12 to 3, 3 to 6, 6 t
   return out.join(", ");
 }
 function snapLabel(){ return "3-hour slots (" + slotLabel() + ")"; }
-function slotEdge(m){                          // the nearer edge of the slot holding m, ties later
-  var lo = SHIFT.start + Math.floor((m - SHIFT.start) / SLOT) * SLOT;
-  return (m - lo) * 2 >= SLOT ? lo + SLOT : lo;
-}
-function snapTo(m){
-  var b = slotEdge(m);
-  return Math.abs(b - m) <= ROUND.tol ? b : m;
+function snapTo(m){                            // back onto the edge just passed, never forward
+  var past = (((m - SHIFT.start) % SLOT) + SLOT) % SLOT;
+  return past > 0 && past <= ROUND.tol ? m - past : m;
 }
 function edgesOf(list){
   var open = {}, close = {};
@@ -1304,15 +1300,16 @@ function renderRoundNote(list){
   $("#round-note").innerHTML = !ROUND.on
     ? "exact clock times"
     : r.n
-      ? r.n + " of " + list.length + (list.length === 1 ? " time" : " times") + " snapped to the " + snapLabel() +
+      ? r.n + " of " + list.length + (list.length === 1 ? " time" : " times") + " pulled back to the " + snapLabel() +
         " &middot; " + (r.d >= 0 ? "+" : "&minus;") + dur(Math.abs(r.d)) + " overall"
-      : "every time already sat on a slot edge";
+      : "no time sat just past a slot edge";
   $("#foot-round").innerHTML = ROUND.on
     ? (ROUND.scope === "first" ? "Only the entry that opens each day and the one that closes it are snapped; everything between keeps its logged clock. "
                                : "") +
-      "Times are snapped to the " + snapLabel() + ": each one moves to whichever slot edge is nearer, " +
-      (ROUND.tol >= SLOT / 2 ? "however far that is"
-                             : "and only when it sits within " + ROUND.tol + " minutes of that edge") +
+      "Times are pulled back to the " + snapLabel() + ", and only backwards: a time up to " + ROUND.tol +
+      " minutes past a slot edge drops onto it, while anything further along keeps its logged clock \u2014 " +
+      hr12(SHIFT.start + SLOT * 3) + ":12 becomes " + hr12(SHIFT.start + SLOT * 3) + ":00, but " +
+      hr12(SHIFT.start + SLOT * 3 - 20) + " is never pushed up to " + hr12(SHIFT.start + SLOT * 3) +
       ". An entry that would collapse onto a single edge keeps its logged clock. The logged time stays struck through."
     : "Times are shown exactly as logged.";
 }
