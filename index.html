@@ -387,8 +387,11 @@ select:disabled{opacity:.45; cursor:not-allowed}
      is the fallback cue when background graphics are switched off */
   table.log tbody.lateday td{-webkit-print-color-adjust:exact; print-color-adjust:exact}
   table.log tr{break-inside:avoid}
-  .dmoney .paywrap input,.dmoney .payreset,.dmoney .paywrap .cur{display:none}
-  .dmoney .paytext{display:inline}
+  /* money is for the screen: the printed ledger is a record of hours, so the rate
+     calculator and every rate, amount and day-pay cell come off the page */
+  #calc-sec{display:none}
+  table.log th.money, table.log td.t-rate, table.log td.t-amt,
+  table.log td.paycell, table.log td.tf-note{display:none}
   /* the footer explains how the screen version behaves - paper does not need the lecture */
   .foot{display:none}
   section{margin-top:22px}
@@ -482,7 +485,7 @@ select:disabled{opacity:.45; cursor:not-allowed}
     </div>
   </section>
 
-  <section>
+  <section id="calc-sec">
     <div class="sec-head">
       <h2>Rate calculator</h2>
       <span class="note">An hourly rate per category &rarr; what the logged time is worth</span>
@@ -1058,8 +1061,8 @@ function renderTable(days){
   var head = '<thead><tr>' +
       '<th>Date</th><th>Start</th><th>End</th><th class="num">Duration</th><th class="num">Hours</th>' +
       '<th>Category</th><th>Sub-category</th><th>Title</th>' +
-      '<th class="num">Rate / h</th><th class="num">Amount</th>' +
-      '<th class="num">Day pay</th>' +
+      '<th class="num money">Rate / h</th><th class="num money">Amount</th>' +
+      '<th class="num money">Day pay</th>' +
     '</tr></thead>';
   var mins = 0, entries = 0;
   var body = days.map(function(d){
