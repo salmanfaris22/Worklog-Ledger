@@ -442,12 +442,12 @@ select:disabled{opacity:.45; cursor:not-allowed}
       <option value="asc">Oldest first</option>
       <option value="hours">Longest day first</option>
     </select>
-    <button id="round" aria-pressed="true" title="Pull times back onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9. Nothing is ever pushed forward to the next slot.">Slot rounding: on</button>
-    <select id="rscope" title="Which times get pulled back to a slot edge">
-      <option value="first">day&rsquo;s first start and last end only</option>
-      <option value="all">every entry</option>
+    <button id="round" aria-pressed="true" title="Pull end times back onto the 3-hour slot grid &mdash; 9 to 12, 12 to 3, 3 to 6, 6 to 9. Start times are never touched and nothing is ever pushed forward to the next slot.">Slot rounding: on</button>
+    <select id="rscope" title="Which end times get pulled back to a slot edge">
+      <option value="first">day&rsquo;s last end only</option>
+      <option value="all">every entry&rsquo;s end</option>
     </select>
-    <select id="tol" title="How far past a slot edge a time may sit and still drop back onto it">
+    <select id="tol" title="How far past a slot edge an end may sit and still drop back onto it">
       <option value="15">only up to 15 min past a slot edge</option>
       <option value="20">only up to 20 min past a slot edge</option>
       <option value="30">only up to 30 min past a slot edge</option>
@@ -875,17 +875,19 @@ function effRate(id, key, cat){
 function hm24(min){ return String(Math.floor(min / 60)).padStart(2,"0") + ":" + String(min % 60).padStart(2,"0"); }
 
 /* ---------------------------- slot rounding ---------------------------- */
-/* Times are pulled BACK onto a 3-hour slot grid anchored to the shift start, so a 9-to-6
-   shift reads as 9 to 12, 12 to 3, 3 to 6, 6 to 9. A time that has only just passed a slot
-   edge drops onto it - 9:12 am becomes 9:00 am, 6:12 pm and 6:21 pm become 6:00 pm - and
-   the tolerance says how far past the edge still counts.
-   Nothing is ever pushed forward to the next slot: 5:40 pm keeps its clock rather than
-   jumping up to 6:00 pm, and 1:35 pm keeps its clock rather than jumping to 3:00 pm.
-   An entry that would collapse onto a single edge keeps its logged clock, and the logged
-   time stays struck through beside the snapped one either way.
-   scope "first", the default, touches only the two times that read as the day's shift - the
-   first start and the last end of the day's main category - and leaves everything between
-   them alone, so a 3:05 pm handover in the middle of the day keeps its logged clock. */
+/* Only END times move, and only BACKWARDS, onto a 3-hour slot grid anchored to the shift
+   start - so a 9-to-6 shift reads as 9 to 12, 12 to 3, 3 to 6, 6 to 9. An end that has only
+   just passed a slot edge drops onto it: 6:12 pm and 6:21 pm become 6:00 pm, 9:10 pm becomes
+   9:00 pm, and the tolerance says how far past the edge still counts.
+   Start times are never touched - a 9:25 am start reads 9:25 am - so rounding can only ever
+   shorten a day, never stretch it, and a late start stays visibly late.
+   Nothing is ever pushed forward to the next slot either: a 5:40 pm end keeps its clock
+   rather than jumping up to 6:00 pm, and 1:35 pm keeps its clock rather than jumping to 3.
+   An entry that would collapse onto its own start keeps its logged clock, and the logged
+   time stays struck through beside the snapped one.
+   scope "first", the default, touches only the one time that reads as the day's clock-off -
+   the last end of the day's main category - and leaves every other end alone, so a 3:05 pm
+   handover in the middle of the day keeps its logged clock. */
 var SLOT = 180;                                // the slot length: 3 hours
 var TOLS = [15, 20, 30, 45, 60];               // how far past an edge a time may still drop back
 var ROUND = { on:true, tol:30, scope:"first" };
@@ -930,32 +932,26 @@ function mainCatOf(list){
   });
   return top;
 }
-/* the entry that opens each day and the one that closes it - ties go to the shorter entry */
-function edgesOf(list){
-  var main = mainCatOf(list);
-  var open = {}, close = {};
+/* the entry that closes each day - ties go to the one that also started later */
+function closersOf(list){
+  var main = mainCatOf(list), close = {};
   list.forEach(function(e){
-    if (e.cat !== main[e.key]) return;          // side work never sets the day's edges
-    var o = open[e.key];
-    if (!o || e.rawStart < o.rawStart || (e.rawStart === o.rawStart && e.rawEnd < o.rawEnd))
-      open[e.key] = e;
+    if (e.cat !== main[e.key]) return;          // side work never closes the day
     var c = close[e.key];
     if (!c || e.rawEnd > c.rawEnd || (e.rawEnd === c.rawEnd && e.rawStart > c.rawStart))
       close[e.key] = e;
   });
-  var oi = {}, ci = {};
-  Object.keys(open).forEach(function(k){ oi[open[k].id] = true; });
+  var ci = {};
   Object.keys(close).forEach(function(k){ ci[close[k].id] = true; });
-  return { open:oi, close:ci };
+  return ci;
 }
 function applyRounding(){
-  var edges = ROUND.scope === "first" ? edgesOf(ALL) : null;
+  var closers = ROUND.scope === "first" ? closersOf(ALL) : null;
   ALL.forEach(function(e){
     var s = e.rawStart, en = e.rawEnd;
-    if (ROUND.on){
-      var s2 = (!edges || edges.open[e.id])  ? snapTo(s)  : s;
-      var e2 = (!edges || edges.close[e.id]) ? snapTo(en) : en;
-      if (e2 > s2){ s = s2; en = e2; }   // an entry that would collapse keeps its logged clock
+    if (ROUND.on && (!closers || closers[e.id])){
+      var e2 = snapTo(en);
+      if (e2 > s) en = e2;               // an entry that would collapse keeps its logged clock
     }
     e.start = s; e.end = en; e.autoMins = en - s;
     var ho = hoursOf(e.id);                 // a hand-typed hours figure wins over the clock
@@ -1320,18 +1316,19 @@ function renderRoundNote(list){
   $("#round-note").innerHTML = !ROUND.on
     ? "exact clock times"
     : r.n
-      ? r.n + " of " + list.length + (list.length === 1 ? " time" : " times") + " pulled back to the " + snapLabel() +
+      ? r.n + (r.n === 1 ? " end" : " ends") + " of " + list.length + " pulled back to the " + snapLabel() +
         " &middot; " + (r.d >= 0 ? "+" : "&minus;") + dur(Math.abs(r.d)) + " overall"
-      : "no time sat just past a slot edge";
+      : "no end sat just past a slot edge";
   $("#foot-round").innerHTML = ROUND.on
     ? (ROUND.scope === "first"
-        ? "Only the day's own first start and last end are snapped \u2014 the day's main category sets those, so an evening meeting never becomes the closing time, and every time in between keeps its logged clock. "
+        ? "Only the end that closes each day is snapped \u2014 the day's main category sets it, so an evening meeting never becomes the closing time, and every other end keeps its logged clock. "
         : "") +
-      "Times are pulled back to the " + snapLabel() + ", and only backwards: a time up to " + ROUND.tol +
+      "Ends are pulled back to the " + snapLabel() + ", and only backwards: an end up to " + ROUND.tol +
       " minutes past a slot edge drops onto it, while anything further along keeps its logged clock \u2014 " +
       hr12(SHIFT.start + SLOT * 3) + ":12 becomes " + hr12(SHIFT.start + SLOT * 3) + ":00, but " +
       hr12(SHIFT.start + SLOT * 3 - 20) + " is never pushed up to " + hr12(SHIFT.start + SLOT * 3) +
-      ". An entry that would collapse onto a single edge keeps its logged clock. The logged time stays struck through."
+      ". Start times are never touched, so a " + hr12(SHIFT.start) + ":25 start still reads " +
+      hr12(SHIFT.start) + ":25 and rounding can only shorten a day. The logged time stays struck through."
     : "Times are shown exactly as logged.";
 }
 
